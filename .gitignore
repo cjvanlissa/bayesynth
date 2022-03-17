@@ -1,0 +1,13 @@
+.Rhistory
+.Rprofile
+*.csv
+*.sav
+*.sas7bdat
+*.xlsx
+*.xls
+*.pdf
+*.fff
+*.log
+*.tex
+.Rproj.user
+*.RData

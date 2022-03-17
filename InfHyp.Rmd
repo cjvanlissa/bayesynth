@@ -1,0 +1,120 @@
+---
+title: "Bayesian Evidence Synthesis Methods"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Matrix)
+library(lavaan)
+library(BFpack)
+library(ggplot2)
+library(metafor)
+library(bain)
+```
+
+## Context
+Caspar developed a method to compute an evidence synthesis BF. To do so, he (more or less) creates a datasets with $k$ independent groups, where each group represents a separate study. With this multigroup dataset, we can use `bain` or `BFpack` to calculate 'overall Bayes factors'. For $BF_{i,u}$ this is the same as the product BF that we use in Bayesian evidence synthesis. For $BF_{i,c}$ it is not. Below, I explain the difference and the link between both methods. The remaining challenge is to decide what is conceptually correct. 
+
+## Example Data + Results
+In this example our evidence synthesis hypothesis with $k=3$ datasets is $H_i: r_{data1}>0.1 \& r_{data2}>0.1 \& r_{data3}>0.1$.  
+
+```{r sim}
+#hyperparameters simulation
+#es = effect size
+#tau2 = between-study variance in es
+#participants
+#k=number of datasets
+hyperparams <- list(
+    es = 0.3,
+    tau2 = 0,
+    pp = 120,
+    k = 3
+)
+
+#hyp_value = threshold for > in informative hypothesis
+hyp_value <- .1
+
+sim_cond <- do.call(expand.grid, hyperparams)
+
+#hyperparameters population
+#true_es = effect size cor in population
+sim_data <- function(true_es, tau2, pp){
+    rho <- rnorm(1, true_es, sqrt(tau2)) #reliability
+    x = rnorm(pp, 0, 1) # vector of predictor?
+    y = rnorm(pp, rho*x, sqrt(1-rho^2)) #outcome
+    list(x = x, y = y)
+}
+
+colSD <- function(x) apply(x, 2, sd, na.rm = TRUE)
+
+
+# generate data
+set.seed(6164900)
+dfs <- lapply(1:hyperparams$k, function(n){
+    sim_data(true_es = hyperparams$es, tau2 = hyperparams$tau2, pp = hyperparams$pp)
+})
+# Compute correlations and se (correlations between x and y)
+res <- sapply(dfs, function(x){
+    r = do.call(cor.test, x)
+    unname(c(r$estimate, sqrt((1 - r$estimate^2)/r$parameter)))
+})
+# Prepare for BFpack calls
+est <- res[1, ]
+names(est) <- paste0("r", 1:length(est))
+Sig <- diag(res[2, ])
+# Get individual BFs for each sample
+bf_individual <- lapply(paste0(names(est), ">", hyp_value),
+                        bain,
+                        x = est,
+                        Sigma = Sig,
+                        n = hyperparams$pp)
+
+fit.i <- sapply(bf_individual, function(x){x$fit$Fit[1]}) #fits of hypotheses (posterior probability of hypotheses given the data)
+#in this case, posterior probability that rho > .1 given the data in each df.
+com.i <- sapply(bf_individual, function(x){x$fit$Com[1]}) #fit of complement given the data.
+bf_prod_c <- sapply(bf_individual, function(x){x$fit$BF.c[1]}) #BFic this is the complement and thus it is just fit.i/(1-fit.i)
+bf_prod_u <- sapply(bf_individual, function(x){x$fit$BF.u[1]}) #BFiu this is just fit.i/com.i, so posterior prop of h1/posterior prop of hu
+
+# Get overall BF
+bf_together <- bain(x = est,
+                    hypothesis = paste0("(", paste0(names(est), collapse = ", "), ") > ", hyp_value),
+                    Sigma = Sig,
+                    n = hyperparams$k*hyperparams$pp)
+
+fit.t <- bf_together$fit$Fit[1]
+com.t <- bf_together$fit$Com[1]
+
+results = list(fit.i=fit.i,
+               prod.fit=prod(fit.i), #product of informative hypotheses fits
+               com.i=com.i,
+               prod.com=prod(com.i),
+               bf.ic=bf_prod_c,
+               bf.ic.prod=prod(bf_prod_c),
+               fit.t=fit.t,
+               com.t=com.t,
+               bf.ct=bf_together$fit$BF.c[1],
+               bf.ict=prod(fit.i)/prod(com.i)/((1-prod(fit.i))/(1-prod(com.i))),
+               bf.iu.prod=prod(bf_prod_u),
+               bf.ut=bf_together$fit$BF.u[1])
+
+print(results)
+
+```
+
+## Explanation
+The product of the individual $BF_{i,u}$ = `r results$bf.iu.prod`, this equals the combined data product `r results$bf.ut`. 
+
+The product of the individual $BF_{i,c}$ = `r results$bf.ic.prod`, whereas the combined data product is `r results$bf.ct`. 
+
+The product Bayes factor equals $\frac{\prod f_i / \prod c_i}{(\prod 1-f_i)/(\prod 1-c_i)}$ = $\frac{`r results$prod.fit` / `r results$prod.com`}{`r prod(1-results$fit.i)` / `r prod(1-results$com.i)`}$ = `r results$bf.ic.prod`. 
+
+The combined data product can be recomputed based on the elements of the individual Bayes factors by $\frac{\prod f_i / \prod c_i}{(1-\prod f_i)/(1-\prod c_i)}$ = $\frac{`r results$prod.fit` / `r results$prod.com`}{`r 1-results$prod.fit` / `r 1-results$prod.com`}$ = `r results$bf.ict`.
+
+The difference is in the denominator: should we look at the within-study complement or is it (also) correct to take a complement of the synthesized hypothesis? 
+
+With the individual product method, our complement is: "r_data_1<0.1 \& r_data_2<0.1 \& r_data_3<0.1", which has the same complexity as our hypothesis "r_data_1>0.1 \& r_data_2>0.1 \& r_data_3>0.1" = $0.5^k$ = `r 0.5^3`. In the overall method, the complement is 'not Hi', which encompasses more options = $1-0.5^k$ = `r 1-0.5^3`. 
+
+The question is whether we first test against the complement in each study and take $BF_{i,c} \times BF_{i,c} \times BF_{i,c}$ or if we can compute the synthesized $BF_{i,c}$ for $H_i: r_{data1}>0.1 \& r_{data2}>0.1 \& r_{data3}>0.1$ vs "not $H_i$". 
+
+&nbsp;
