@@ -12,3 +12,4 @@
 .Rproj.user
 *.RData
 *.txt
+!sim_results*

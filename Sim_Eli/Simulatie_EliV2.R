@@ -21,7 +21,7 @@ if(!all(versions == 0)) stop("Using the incorrect version of one or more package
 
 # set conditions for simulation
 hyper_parameters<-list(
-  ndataset = 1:2,            # number of replications per condition
+  ndataset = 1:100,            # number of replications per condition
   es = c(0, 0.1, .2),        # true effect size = true correlation with outcome
   errorsd = c(0.81, .5, 0),   # corresponds to reliability of .6, .8, and 1
   n = c(20, 80, 200, 500),             # mean sample size per group
