@@ -17,7 +17,7 @@ versions <- c(
 if(!all(versions == 0)) stop("Using the incorrect version of one or more packages.")
 
 # Load simulation functions from source -----------------------------------
-source('Sim_Eli/functions.R')
+# source('Sim_Eli/functions.R')
 
 # set conditions for simulation
 hyper_parameters<-list(
