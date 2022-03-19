@@ -18,7 +18,7 @@ BFs <- function(es, n, hyp_val, k, errorsd){
   
   # Classic approach
   classic_allsig <- all(apply(res, 2, function(x){
-    x[1]-1.96*x[2] > hyp_val
+    (x[1]-hyp_val)/x[2] > 1.644854
   }))
   
   # necessary naming for bain and further preparing
