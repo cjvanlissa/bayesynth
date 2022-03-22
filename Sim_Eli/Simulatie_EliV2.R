@@ -57,7 +57,7 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
     df <- rmvnorm(n, sigma = matrix(c(1, es, es, 1), nrow = 2))
     df + rnorm(2*n, sd = errorsd)
   })
-  
+
   # obtain estimates for correlations and their standard errors for every dataset
   res <- sapply(dfs, function(x){
     est <- cor(x)[2,1]                        #estimate for correlation between x and y
@@ -103,7 +103,7 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
   
   # returns in order: gpbf_ic, gpbf_iu, prodbf_ic, prodbf_iu, tbf_ic, tbf_iu
   c(rownum,
-    c(0,10)[classic_allsig+1],
+    c(0,10)[classic_allsig+1], #return 10 if classic_allsig = T, 0 if false
     gp_and_prod[1,],
     gp_and_prod[2,], 
     c(bf_together$fit$BF.c[1], bf_together$fit$BF.u[1]))
