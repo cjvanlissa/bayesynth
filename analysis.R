@@ -64,7 +64,7 @@ lapply_at <- function(var, truees) {
 
 # in long format
 metrics <- function(datf){
-  res <- datf[!es < .1, sapply(.SD, function(var) {
+  res <- datf[!es < .1,  sapply(.SD, function(var) {
     table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE")))
   }), .SDcols = varsout]
   rownames(res) <- c("TN", "FN", "FP", "TP")
@@ -123,28 +123,3 @@ ggplot(df_plot, aes(x = Sensitivity, y = Specificity, colour = Method)) +
   scale_y_continuous(limits = c(0,1)) +
   theme_bw()
 
-# conditional on n
-ndf <- rbind(create_df_plot(dat[n==20]),
-           create_df_plot(dat[n==80]),
-           create_df_plot(dat[n==200]),
-           create_df_plot(dat[n==500]))
-ndf$cond <- c(rep("n = 20", 7), rep("n = 80", 7), rep("n = 200", 7), rep("n = 500", 7))
-
-ggplot(ndf, aes(x = Sensitivity, y = Specificity, colour = Method, shape = cond)) +
-  geom_point() +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.75,1)) +
-  theme_bw()
-
-
-# conditional on errorsd
-errorsddf <- rbind(create_df_plot(dat[errorsd == 0]),
-             create_df_plot(dat[errorsd == 0.5]),
-             create_df_plot(dat[errorsd == 0.81]))
-errorsddf$cond <- c(rep("errorsd = 0", 7), rep("errorsd = 0.5", 7), rep("errorsd = 0.81", 7))
-
-ggplot(errorsddf, aes(x = Sensitivity, y = Specificity, colour = Method, shape = cond)) +
-  geom_point() +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0,1)) +
-  theme_bw()
