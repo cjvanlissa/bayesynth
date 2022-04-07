@@ -1,7 +1,7 @@
 ---
 title: "Report"
 author: "Eli Clapper"
-date: "23/03/2022"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
@@ -11,11 +11,12 @@ Report on the results
 <!--
 call library and load in results. The `dat` `data.table` is subsetted for all cases where $es >= .1$ . This removes 108/3 = 36 conditions from the results.
 -->
+
 ```{r, echo = F}
 library(data.table) # load in libraries
 library(DT)
 library(ggplot2)
-dat <- readRDS(file.path("Sim_Eli", "sim_results_2022-03-19.RData")) #
+dat <- readRDS(file.path("../Sim_Eli", "sim_results_2022-03-19.RData")) #
 dat <- dat[!es < .1]
 ```
 
