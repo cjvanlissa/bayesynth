@@ -13,3 +13,4 @@
 *.RData
 *.txt
 !sim_results*
+**/UI Function/cor_vs_lm.R

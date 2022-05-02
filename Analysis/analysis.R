@@ -38,9 +38,9 @@ stats <- apply(res, 2, function(x){
 
 library(ggplot2)
 df_plot <- data.frame(Method = colnames(stats),
-        Sensitivity = stats["sensitivity", ],
-        Specificity = stats["specificity", ])
-        
+                      Sensitivity = stats["sensitivity", ],
+                      Specificity = stats["specificity", ])
+
 ggplot(df_plot, aes(x = Sensitivity, y = Specificity, colour = Method, shape = Method)) +
   geom_point() +
   scale_x_continuous(limits = c(0,1))+
