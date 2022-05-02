@@ -8,7 +8,7 @@ preprocess_data <- function(data, hypothesis, grouping){
   if(!k > 1){stop("At least two groups are required to aggregate Bayes Factors")}
   
   # obtain the hypothesized value
-  hyp_val <- as.numeric(unlist(regmatches(hypothesis, gregexpr("[[:digit:]]+\\.*[[:digit:]]*",hypothesis))))
+  hyp_val <- as.numeric(unlist(regmatches(hypothesis, gregexpr("[-]?[[:digit:]]+\\.*[[:digit:]]*",hypothesis))))
   constraint <- unlist(regmatches(hypothesis, gregexpr("(>|<|=)", hypothesis)))
   
   # obtain per group the data.frame to calculate BF on.
@@ -29,7 +29,6 @@ preprocess_data <- function(data, hypothesis, grouping){
 }
 
 ###### Calculates allsig -------------------------------------------------------
-# Do not know how this function precisely works.... Copied it from the simulation script.
 allsig <- function(res, hyp_val){
   classic_allsig <- all(apply(res, 2, function(x){
     (x[1]-hyp_val)/x[2] > 1.644854
@@ -43,13 +42,13 @@ tbf <- function(res, hyp_val, n, k, constraint){
   bf_together <- bain(res[1,], 
                       hypothesis = gsub("(r1)", "r1", paste0("(", paste0(colnames(res), collapse = ", "), ")", constraint, hyp_val), fixed = TRUE), 
                       n = sum(rep(n, k)),
-                      Sigma = diag(res[2,], ncol = ncol(res)))
+                      Sigma = diag(res[2,]^2, ncol = ncol(res)))
   return(c(tbf_ic = bf_together$fit$BF.c[1], tbf_iu = bf_together$fit$BF.u[1]))
 }
 
 ###### Calculates prodbf_iu, prodbf_ic, gpbf_iu and gpbf_ic --------------------
 prod_and_gpbf <- function(res, hyp_val, n, k, constraint){
-  sig <- lapply(res[2,], matrix)
+  sig <- lapply(res[2,]^2, matrix)
   bf_individual <- lapply(paste0(colnames(res), constraint, hyp_val), 
                           bain,       
                           x = res[1,],
@@ -72,16 +71,15 @@ prod_and_gpbf <- function(res, hyp_val, n, k, constraint){
 }
 
 ##### To generate an example data.frame ----------------------------------------
-example_df <- function(){
-  set.seed(6164900)
-  y <- rnorm(1000)
-  x <- y + rnorm(1000,0,3)
+example_df <- function(r){
+  M <- rmvnorm(1000, sigma = matrix(c(1, r, r, 1), nrow = 2))
+  colnames(M) <- c('y', 'x')
   z <- rnorm(1000)
-  M <- as.data.frame(cbind(y = y,        # generate outcome variable from std normal dist
-             x = x,                      # generate predictor from normal dist
-             z = z,
-             k = rep(c("A", "B", "C", "D"), each = 250)))   # make 4 groups
+  M <- as.data.frame(cbind(M, 
+                           z = z,
+                           k = rep(c("A", "B", "C", "D"), each = 250)))   # make 4 groups
   M[,c(1:3)] <- sapply(M[,c(1:3)], as.numeric)
+  M[,c(1:3)] <- scale(M[,c(1:3)])
   return(M)
 }
  

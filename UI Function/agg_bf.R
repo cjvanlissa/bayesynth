@@ -15,7 +15,8 @@
 
 # for example, an input data frame can look as follows, where z remains unused for now
 source(file.path("UI Function", "support_functions.R"))
-M <- example_df()
+library(mvtnorm)
+M <- example_df(r = 0.2)
 
 # the function
 agg_bf <- function(formula, grouping, data, algorithm, hypothesis){
@@ -51,16 +52,13 @@ agg_bf <- function(formula, grouping, data, algorithm, hypothesis){
   return(out)
 }
 
-# test for five algorithms and three different constraints
+# test for five algorithms, three different constraints and two directions of effect
 (c(true_effect = cor(M$x, M$y)))
-agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_ic', hypothesis = '>0.2')
-agg_bf(y~x, grouping = 'k', data = M, algorithm = 'tbf_ic', hypothesis = '>0.2')
-agg_bf(y~x, grouping = 'k', data = M, algorithm = 'gpbf_ic', hypothesis = '<0.2')
+agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_ic', hypothesis = '> 0.2')
+agg_bf(y~x, grouping = 'k', data = M, algorithm = 'tbf_ic', hypothesis = '< 0.2')
+agg_bf(y~x, grouping = 'k', data = M, algorithm = 'gpbf_ic', hypothesis = '= 0.2')
+agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_iu', hypothesis = '> -0.2')
+agg_bf(y~x, grouping = 'k', data = M, algorithm = 'tbf_ic', hypothesis = '= -0.2')
 
-#the 'equals' constraint seems to malfunction
-agg_bf(y~x, grouping = 'k', data = M, algorithm = 'gpbf_iu', hypothesis = '= 0') 
-
-#also does not seem to work yet for negative hypothesized values
-agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_iu', hypothesis = '<-0.5')
 
 

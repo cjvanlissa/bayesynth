@@ -183,7 +183,7 @@ ggplot(k_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = cond
   scale_color_manual(values = colours) +
   theme_bw()
 
-
+# THIS MUST RUN AGAIN WITH NEW DATA!
 ## ---- eval = F, echo = F---------------------------------------------------------------------------------------------------------------------------
 ## kn_df <- do.call(rbind, lapply(cond_num('k'), function(x){
 ##   do.call(rbind, lapply(cond_num('n'), function(y){

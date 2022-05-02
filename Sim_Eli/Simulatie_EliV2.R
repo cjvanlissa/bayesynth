@@ -72,7 +72,7 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
   
   # necessary naming for bain and further preparing
   colnames(res) <- paste0('r', 1:k)
-  sig <- lapply(res[2,], matrix)    # make list of covariance matrices for the datasets, as shown in the Bain vignette
+  sig <- lapply(res[2,], function(x){matrix(x^2)})    # make list of covariance matrices for the datasets, make sure to square the standard errors
   #ngroup <- rep(n, k)       # obtain sample size per group
   
   #run bf_individual to extract product bf and geometric product bf
@@ -99,7 +99,7 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
   bf_together <- bain(res[1,], 
                       hypothesis = gsub("(r1)", "r1", paste0("(", paste0(colnames(res), collapse = ", "), ") > ", hyp_val), fixed = TRUE), 
                       n = sum(rep(n, k)), # n = sum of sample sizes over all groups.
-                      Sigma = diag(res[2,], ncol = ncol(res)))      # assume independence between groups
+                      Sigma = diag(res[2,]^2, ncol = ncol(res))) # assume independence between groups, square standard errors
   
   # returns in order: gpbf_ic, gpbf_iu, prodbf_ic, prodbf_iu, tbf_ic, tbf_iu
   c(rownum,
