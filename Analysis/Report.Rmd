@@ -1,6 +1,6 @@
 ---
 title: "Report"
-author: "Eli Clapper"
+author: "Caspar van Lissa & Eli Clapper"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
@@ -16,386 +16,174 @@ call library and load in results. The `dat` `data.table` is subsetted for all ca
 library(data.table) # load in libraries
 library(DT)
 library(ggplot2)
-dat <- readRDS(file.path("../Sim_Eli", "sim_results_2022-03-19.RData")) #
-dat <- dat[!es < .1]
+rename <- c("prodbf" = "PBF", "gpbf" = "gPBF", "tbf" = "TBF", "ipd" = "IPD", "rma" = "RMA", "allsig" = "VC")
+
 ```
 
-<!-- Some preparatory variables which are the algorithms (varsout) and the conditions (varspred) -->
-```{r, echo = F}
-varsout <- c("allsig", "gpbf_ic", "gpbf_iu", "prodbf_ic", "prodbf_iu", "tbf_ic", "tbf_iu")
-varspred <- c("es", "errorsd", "n", "k", "hyp_val")
+# Results
+
+For each algorithm, a confusion matrix was obtained by tabulating inferential decisions made using that algorithm against the population status of the hypothesis (true or false).
+For all BFs, the informative hypothesis was accepted if BF > 3.
+For the IPD and RMA meta-analysis, the null-hypothesis was rejected if the confidence interval for the overall effect size excluded the hypothesized value.
+Finally, for the vote count (VC) algorithm, the null was rejected if all individual group hypotheses were rejected.
+Table \@ref(tab:tabconf) shows the resulting confusion matrix metrics.
+The only algorithm that shows relatively high values for both sensitivity and specificity is the product Bayes factor (PBF).
+This is also reflected in the high accuracy, which represents the total proportion of correct (true positive/true negative) decisions.
+
+```{r tabconf, echo = F, message=F}
+tab <- read.csv("../confusion.csv", stringsAsFactors = FALSE)
+names(tab)[1] <- "Metric"
+tab$Metric <- gsub("^.+_", "", tab$Metric)
+tab <- tab[!tab$Metric == "lr", !grepl("iu", names(tab))]
+names(tab) <- gsub("_ic", "", names(tab))
+names(tab)[match(names(rename), names(tab))] <- rename
+tab <- tab[tab$Metric %in% c("sensitivity", "specificity", "accuracy"),]
+rownames(tab) <- NULL
+knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
+```
+These results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
+In contrast, specificity was very high for all algorithms except PBF.
+This suggests that the other algorithms classified most conditions as negatives (no effect found),
+regardless of the existence of a population effect.
+The PBF trades a loss of specificity for increased sensitivity,
+and average levels of both were approximately equal.
+As the PBF vastly outperformed other BFs, these were omitted from further analysis.
+
+## Effect of simulation conditions
+
+We examined the effect of simulation conditions on overall accuracy.
+
+```{r tabeffect, echo = FALSE}
+tab <- read.csv("../effect_of_conditions.csv", stringsAsFactors = FALSE)
+tab <- tab[, !grepl("(gpbf|tbf)", names(tab))]
+tab <- tab[, c("condition", "prodbf_ic", "rma", "ipd", "allsig", "prodbf_ic.vs..rma", "ipd.vs..prodbf_ic", "allsig.vs..prodbf_ic")]
+names(tab) <-  c("Factor", "PBF", "RMA", "IPD", "VC", "vs RMA", "vs IPD", "vs VC")
+
+knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
+```
+PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and residual heterogeneity.
+
+### Effect of sample size
+
+```{r fign, fig.cap="Mean performance by sample size"}
+res <- readRDS("../confusion_by_cond.RData")
+res <- res[res$alg %in% c("ipd", "rma", "allsig", "prodbf_ic"), ]
+
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("n", "Outcome", "alg")]
+ggplot(df_plot, aes(x = n, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance", x = "Sample size")
 ```
 
+Figure \@ref(fig:fign) indicates that for PBF, both sensitivity and specificity increase with sample size.
+The other algorithms also show increasing sensitivity, but not specificity, which is at a ceiling.
+This difference explains the effect of errorsd on the diference between algorithms (see Table \@ref(tab:tabeffect)).
 
-### Marginal Descriptives
-<!--
-Obtain marginal descriptives for all algorithms separately. This function first aggregates all conditions by taking the median over all 1000 simulation runs on that condition, reducing the `data.table` to 72000/1000 = 72 medians for the different conditions. Finally it describes the distribution of medians of these 72 conditions for every algorithm. It takes some quantiles, the median absolute deviations from the overall median of that algorithm, the sum of where BF > 3 and the range. Later on, confusion matrix metrics such as Sensitivity and Positive Likelihood Ratio are calculated on the non-aggregated `data.table`.
--->
+### Effect of number of groups
 
-*Table 1.* The marginal median Bayes Factors for all algorithms.
-```{r, echo = F}
-descriptives <- function(datf){ 
-  descs <- as.matrix(
-    datf[, lapply(.SD, function(var){
-    quants <- quantile(var, c(0.25, 0.50, 0.75, 0.90, 0.95))# obtain overall quantiles
-    mads <- mad(var)       # obtain Median absolute deviations per conditions
-    sums <- sum(var>3)     # obtain sums where the median is > 3
-    maxvals <- max(var)    # obtain the highest median
-    minvals <- min(var)    # obtain lowest median
-    c(quants[1], quants[2], quants[3], quants[4], quants[5], mads, sums, maxvals, minvals)
-  }), .SDcols = varsout])
-  rownames(descs) <- c('25 %', '50 %',  '75 %','90 %', '95 %', "mad", "sum>3", "max", "min")
-  descs
-}
-marginal_descs <- descriptives(dat[ ,lapply(.SD, median), .SDcols = varsout, by = varspred])
-datatable(round(marginal_descs,5), options = list(dom = 't'))
+```{r, fig.cap="Mean performance by number of groups"}
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("k", "Outcome", "alg")]
+ggplot(df_plot, aes(x = k, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance", x = "Number of groups")
 ```
-*Every condition has been simulated 1000 times. For every condition and algorithm, the Bayes Factors are aggregated by taking the median over all Bayes Factors, leaving 72 median BF's per algorithm*
-
-Optimally, the algorithms should have $\frac{72}{2} = 36$ conditions where the median BF > 3 in the cases where $es$ > $hyp_val$. The marginal median for all algorithms is $\approx 1.0$, however. Even at the $90^{th}$ percentile only the `prodbf_ic` algorithm has its median BF > 3. The Median Absolute Deviations are not too severe, providing evidence for somewhat reliable estimates. `Prodbf_ic` does have a notably higher mad, which is likely due to its large valued outliers. Because the BF is bound between 0 and $\infty$, outliers are plausible and can be influential on the MAD when, in this case, only 72 medians construct the distribution of conditional medians. 
-
-The finding is that the algorithms are rather conservative, which is further supported by the number of times the median BF does exceed 3. Both `gpbf` algorithms count 0 conditions where median BF > 3, while for `allsig` this number is 1. For the `prodbf_iu` and `tbf` algorithms 5 or 6 times is counted and only the `prodbf_ic` seems to have a more notable number of times the median BF > 3, namely 16. Another observation is that the informative BFs against the unconstrained hypotheses seem to be a bit more conservative than their complement hypotheses counterparts. Finally, it seems as if the columns for `prodbf_iu` and `tbf_iu` are exactly equal. Lets check that out.
-
-
-```{r}
-all.equal(dat$tbf_iu, dat$prodbf_iu)
-cor(dat$tbf_iu, dat$prodbf_iu)
-```
-
-`tbf_iu` and `prodbf_iu` are indeed perfectly correlated and all values in both columns in the complete `data.table` are equal. Upon further inspection it does not seem to be a simulation error. It seems as if `tbf_iu` and `prodbf_iu` do the exact same thing. It would mean that the product of the unconstrained Bayes Factors is the same as the unconstrained Bayes Factor under the condition that the hypothesis holds for all $k$ groups.
+The figure indicates that, for PBF at higher levels of k, lower sensitivity is exchanged for greater specificity.
+The other algorithms do not show this pattern, as their specificity is at a ceiling.
+This difference in pattern of effects explains why number of groups has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Only VC shows decreasing sensitivity with an increasing number of groups;
+this is because the probability of obtaining any false negatives increases with the number of groups.
 
 
-#### Descriptives for es > .1
+### Effect of residual heterogeneity
 
-With this in mind, let us continue. We can filter the tbf_iu out of the data.
-Now we subset for when true BF > 3 and describe the distribution for those conditional medians.
-```{r}
-dat <- dat[,tbf_iu:=NULL]
-varsout <- c("allsig", "gpbf_ic", "gpbf_iu", "prodbf_ic", "prodbf_iu", "tbf_ic")
-```
+```{r, fig.cap="Mean performance by errorsd"}
 
-
-*Table 2.* The median Bayes Factors for all algorithms in the condition that es > .1.
-```{r, echo = F}
-es_gt_hyp_val <- descriptives(dat[es == .2 ,lapply(.SD, median), .SDcols = varsout, by = varspred])
-datatable(round(es_gt_hyp_val,5),options = list(dom = "t"))
-```
-
-```{r}
-all(es_gt_hyp_val['sum>3',varsout] == marginal_descs['sum>3',varsout]) 
-```
-
-Even when the `data.table` is subsetted for when es > hyp_val no median BF gets above 3. Also, all cases where the median BF does exceed 3 is indeed only in the conditions when es > hyp_val, suggesting the algorithms do not accredit effects when in reality there is indeed no effect. Again, the MADs are not too severe, except for the prodbf_ic, suggesting the prod_bf algorithm is less stable when BF > 3 and can calculate large estimates even when the true_es is just 0.1 point higher than the hypothesized value. Again, the unconstrained algorithms seem to generally be more conservative than the complementary. 
-
-#### Descriptives for es < .1
-
-*Table 2.* The median Bayes Factors for all algorithms in the condition that es < .1.
-```{r, echo =F}
-es_st_hyp_val <- descriptives(dat[es == .1 ,lapply(.SD, median), .SDcols = varsout, by = varspred])
-datatable(round(es_st_hyp_val,5), options = list(dom = 't'))
-```
-Further supporting the idea of conservative algorithms is the finding is that the maximum median BFs in the cases where $es = hyp\_val$ all are $\approx 1$ and  all $75^{th}$ percentiles are slightly below one. The algorithms seem to favour the hypotheses that are not in the hypothesized direction, although very moderately. The previously noticed effect of the unconstrained vs. the complement algorithms is not immediately visible.
-
-
-### inspecting conditions when median prodbf_ic > 3
-Finally, before going to the non-aggregated `data.table`, the conditions are inspected where median `prodbf_ic` > 3. The dt is then ordered by $k$ and `prodbf_ic` values.
-
-*Table 2.* The 16 conditions when the median BF for prodbf_ic > 3.
-```{r, echo = F}
-prodbf_gt_3 <- dat[,lapply(.SD, median), .SDcols = varsout, by = varspred][prodbf_ic > 3][order(k, prodbf_ic, decreasing = T)]
-datatable(round(prodbf_gt_3,3), options = list(pageLength = 5))
-```
-First of all, the conditions where the median BF exceeds three for `prodbf_ic`, are also the conditions where it exceeds three for all other algorithms, except `allsig.` The only condition where the median BF for `allsig` exceeded 3 was when $es = 0.2, errorsd = 0, n = 500, k = 1$, and $hyp\_val = 0.1$.
-It is evident that the higher values for the median BF occur for higher values of $k$, with ten out of sixteen times $k = 10$ and the rest when $k = 3$. This makes sense as the `prod_bf` algorithms take the product of the Bayes Factor for all $k$ groups. The likelihood of BF_ic and BF_iu being bigger than 1 or a specific group increases as $es > hyp\_val$, resulting in big numbers when all BFs are multiplied. The finding that the other algorithms are more conservative than the `prodbf_ic` is likely because they correct for the number of groups. For the `gpbf` algorithms by raising the `prodbf` to the power $\frac{1}{k}$. The `tbf` algorithms correct for $k$ by calculating the BFs under the condition that the effect in all $k$ groups together is bigger than the hypothesized value, rather than for all $k$ groups separately. The `prodbf_iu` algorithm does not directly correct for $k$, but it is not restricted to testing only against the complement of the hypothesized direction. It rather tests against the unconstrained hypotheses. In other words, how much more likely is the informative hypothesis than the hypothesis where there is no equality constrained at all.
-
-The other condition that seems to have some importance is $errorsd$, where most algorithms found an effect when $errorsd \neq 0.81$ and preferably when $errorsd = 0$. Further analysis will investigate this idea.
-
-### Confusion matrix metrics
-
-<!-- defining functions below which are useful for later when plotting per condition -->
-```{r, echo = F}
-# obtain confusion matrix metrics with a dimension of 1 by alg*metrics (so 1x28 in this datatable)
-lapply_at <- function(var, truees) {
-  results <- sapply(var, function(var) {
-    table(ordered(truees > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE")))
-  })
-  names(results) <- vapply(names(var), paste, c("TN", "FN", "FP", "TP"), sep = "_", 
-                           FUN.VALUE = character(4),
-                           USE.NAMES = FALSE)
-  as.list(results)
-}
-
-# in long format gives a 4x7 matrix with 4 metrics and 7 algorithms
-metrics <- function(datf){
-  res <- datf[, sapply(.SD, function(var) {
-    table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE")))
-  }), .SDcols = varsout]
-  rownames(res) <- c("TN", "FN", "FP", "TP")
-  return(res)
-}
-
-# obtain metrics per algorithm based on FP, TN, FN and TP() and collect in a matrix
-get_stats <- function(res){ 
-  suppressMessages(
-  apply(res, 2, function(x){
-    attach(as.list(x))
-    alpha = FP / (FP + TN) #False positive rate 
-    beta = FN / (TP + FN) # False negative rate
-    sensitivity = 1-beta
-    specificity = 1-alpha
-    correct = (TN + TP) /(FP + FN + TN + TP)
-    pos_lr = sensitivity / (1 - specificity)
-    neg_lr = (1 - sensitivity) / specificity
-    c(correct = correct,
-      False_positive_rate_alpha = alpha,
-      False_negative_rate_beta = beta,
-      sensitivity = sensitivity,
-      specificity = specificity, 
-      pos_lr = ifelse(is.na(pos_lr), 0, pos_lr),
-      neg_lr = ifelse(is.na(neg_lr), 0, neg_lr))
-  })
-  )
-}
-
-# create df from stats matrix for plotting purposes
-plot_df <-function(stats){ 
-  data.frame(Method = colnames(stats),
-        correct = stats["correct", ],
-        Sensitivity = stats["sensitivity", ],
-        Specificity = stats["specificity", ],
-        FPR = stats["False_positive_rate_alpha", ],
-        FNR = stats["False_negative_rate_beta", ],
-        Pos_lr = stats["pos_lr", ],
-        Neg_lr = stats["neg_lr", ])
-}
-
-# all in one function. Create plot df for a subset of the data table.
-create_df_plot <- function(datf){
-  metrics_long <- metrics(datf)
-  stats <- get_stats(metrics_long)
-  df_plot <- plot_df(stats)
-  return(df_plot)
-}
-
-#set colours to use for different algorithms
-colours <- c("black", "orange" , "red", "#79aaf7", "blue", "#00a62f" )
-
-# obtain numeric values each conditions take on
-cond_num <- function(cond){return(as.numeric(names(table(dat[,..cond]))))}
-
-#obtain condition names. For k it returns c("k = 1", "k = 3", "k = 10")
-cond_names <- function(cond){return(paste0(cond, " = ",names(table(dat[,..cond]))))}
-```
-
-*Table 4.* The marginal confusion matrix metrics.
-```{r, echo = F, message=F}
-df_plot <- create_df_plot(dat)
-marginal_metrics <- rbind(df_plot[,2:ncol(df_plot)], 
-      mean = apply(df_plot[,2:ncol(df_plot)], 2 ,mean))
-datatable(round(marginal_metrics, 5), options = list(dom = 't'))
-```
-
-Firstly, on average, the algorithms were correct in 58\% of the cases. The `prodbf_ic` did best with 68\% identified correctly, followed by 62\% of the tbf_ic.The gbpf algorithms do overall worst with $\approx 50\%$ being identified correctly. Also interesting, all `_ic` algorithms do better than their `_iu` counterparts.
-
-Secondly, all measures also suggest conservative algorithms, with a mild exception for `prodbf_ic.` The mean Sensitivity of the algorithms is 0.17, meaning that on average, out of all cases where BF > 3, only 17\% is identified correctly. Interestingly, the `gpbf` algorithms are especially conservative with an almost perfect Specificity, but no ability to detect an effect. The `tbf` algorithms and `prodbf_iu` do slightly better in this regard. An obvious outlier is the `prodbf_ic` algorithm with 44\% correctly identified when BF > 3.
-
-Where the algorithms make up is in the Specificity, with a mean specificty of 0.98. This implies that out of all cases where BF < 3, 98\% is identified correctly on average. The `prodbf_ic` performs only slightly worse than the other algorithms, although the differences are not too severe. The measure does not say much however in combination with the low Sensitivity. If all cases are evaluated as having no effect anyway, it is no surprise or feat that the Specificity is (close to) perfect. For a clearer picture, we look at the LR+ and LR-.
-
-Looking at the LR+, `prodbf_iu` has the best performance with 30.3, followed by `tbf_ic` with 15.3. It means that the `prodbf_iu`, out off all cases it accredited an effect, it does best to separate it from actual no effects. The finding that this value is lower for `prodbf_ic` means that `prodbf_ic` has a higher likelihood of finding an effect when there is none.
-
-The LR- corrects for algorithms' conservatism. For example, `gpbf_iu` has a value of 1, which means that out of all the tests it determined that there was no effect, 100\% of the times it was wrong when in reality there was an effect. `prodbf_ic` actually does best in this regard. Out of all the tests it determined that there was no effect, 60\% it was wrong when there in reality was an effect. 
- 
-A first conclusion would be that the `prodbf_ic` is the algorithm of choice. It is the only algorithm that has a somewhat higher ability to detect an effect when there is one, while still performing well when there is no effect. It does have a somewhat higher probability of finding an effect when there in reality is none which could be a valid concern. When the chance of a Type I error needs to be reduced as much as possible, it would be wiser to choose `prodbf_iu` or `tbf_ic` which have less ability to detect an effect, but are also less likely to call an effect when there in reality is none.
-
-
-
-### Plots per condition
-since `gpbf_iu` has not found an effect in any simulation run, it is not informative to include it in a plot
-```{r}
-all(dat$gpbf_iu < 3)
-```
-
-And thus it can be omitted during plotting of the confusion matrix metrics, because it is not informative
-```{r}
-dat <- dat[,gpbf_iu:=NULL]
-varsout <- c("allsig", "gpbf_ic", "prodbf_ic", "prodbf_iu", "tbf_ic")
-```
-
-
-First the relationship between Sensitivity and Specificity is plot for $errorsd$, then for $n$ and finally for $k$
-It was expected that there might have been an interaction between $errorsd$ and $k$ and so the final plot will show this interaction
-
-#### errorsd
-
-*Figure 1.* The effect of *errorsd* on the sensitivty and Specificity of the algorithms.
-```{r, echo = F}
-sd_df <- do.call(rbind, lapply(cond_num('errorsd'), function(x){create_df_plot(dat[errorsd == x])})) 
-sd_df$condition <- rep(cond_names('errorsd'), each = length(varsout))
-
-ggplot(sd_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.85,1)) +
-  scale_color_manual(values = colours) +
-  theme_bw()
-```
-
-
-There seems to be a moderate effect of $errorsd$ for `prodbf_ic`. It seems that the higher the reliability, the more power, but the more chance for Type I errors. Do note that the y-axis representing Specificity starts at 0.85.  In the condition that $errorsd = 0$, the Sensitivity of `prodbf_ic` is above 50\%, showing that with no reliability issues, it still has a great ability to detect no effect (Specificity = 0.88), and even an ability to detect an effect that is higher than chance (Sensitivity = 0.62). Do be aware that this means a 12\% chance of a Type I error and a 48\% of a Type II error.
-
-If a lower Type I error rate is desired, then `tbf_ic` is the superior algorithm. When $errorsd = 0$ its Specificity still 0.98, while its Sensitivity is 0.47. Still, a conventional desire for power is 80\% and no algorithm comes close to this number.
-The `gpbf_ic` and `allsig` algorithms do not seem to be affected much by the variation in $errrosd$.
-
-The relationship does make sense as the `tbf` algorithm seems to be more dependent on group consensus to find an effect. There is a high probability of consensus in the condition that $errorsd = 0$. For `prodbf_ic`, its BF more easily increases drastically if only a few groups find large effects, as the BF is bound between 0 and $\infty$. If the BF of only one group is, let's say, 2000, than multiplying with the other BF's will likely still lead to a high `prodBF_ic`. 
-
-All in all it seems as if if the performance difference between algorithms is larger than the performance difference between conditions.
-
-#### n
-
-*Figure 2.* The effect of *n* on the Sensitivity and Specificity of the algorithms.
-```{r, echo = F}
-n_df <- do.call(rbind, lapply(cond_num('n'), function(x){create_df_plot(dat[n == x])})) 
-n_df$condition <- rep(cond_names('n'), each = length(varsout))
-
-ggplot(n_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.80,1)) +
-  scale_color_manual(values = colours) +
-  theme_bw()
-```
-
-There seems to be only a slight improvement of the algorithms as $n$ gets larger. Again, the y-axis starts at 0.80. For all algorithms except `prodbf_ic`, $n$ has barely any influence. This means that the performance of these algorithms are not much dependent on the sample sizes within groups $k$. For `prodbc_ic` the effect of $n$ is more clearly visible with quite some difference in Specificity when $n$ drops from 80 to 20.
-Sensitivity does seem to slightly improve as $n$ gets larger for all algorithms except `gpbf_ic`. When $n = 500$, there is almost no loss in Specificity, while this loss gets larger as $n$ decreases.
-
-#### k
-*Figure 3.* The effect of *k* on the Sensitivity and Specificity of the algorithms.
-```{r, echo = F}
-k_df <- do.call(rbind, lapply(cond_num('k'), function(x){create_df_plot(dat[k == x])})) 
-k_df$condition <- rep(cond_names('k'), each = length(varsout))
-
-ggplot(k_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.85,1)) +
-  scale_color_manual(values = colours) +
-  theme_bw()
-```
-
-the general effect of $k$ seems to be that the higher $k$, the more balance between Specificity and Sensitivity. Especially `prodbf_ic` at $k = 10$ shows promising results with Specificity = 0.87 and Sensitivity = 0.78. Also the `tbf_ic` does well at $k = 10$, with a notably lower Sensitivity (0.52) than `prodbf_ic`, but a notably higher Specificity (0.98).
-
-
-### interactions
-<!-- this is not optimal and takes long time to run, thats why the outputs are saved in .RData files. -->
-```{r, eval = F, echo = F}
-# kn_df <- do.call(rbind, lapply(cond_num('k'), function(x){
-#   do.call(rbind, lapply(cond_num('n'), function(y){
-#     temp <- create_df_plot(dat[k == x & n == y])
-#     temp$condition1 <- paste0('k = ', x)
-#     temp$condition2 <- paste0('n = ', y)
-#     temp
-#     }))
-#   }))
+# dat <- readRDS(file.path("../Sim", "sim_results_2022-05-07.RData"))
+# varsout <- c("ipd", "rma", "allsig", "prodbf_ic")
+# varspred <- c("errorsd", "n", "k", "hyp_val")
 # 
-# ke_df <- do.call(rbind, lapply(cond_num('k'), function(x){
-#   do.call(rbind, lapply(cond_num('errorsd'), function(y){
-#     temp <- create_df_plot(dat[k == x & errorsd == y])
-#     temp$condition1 <- paste0('k = ', x)
-#     temp$condition2 <- paste0('errorsd = ', y)
-#     temp
-#     }))
-#   }))
+# df_plot <- dat[!es < .1,  lapply(.SD, function(var) {
+#   as.vector(table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE"))))
+# }), .SDcols = varsout, by = "errorsd"]
 # 
-# en_df <- do.call(rbind, lapply(cond_num('errorsd'), function(x){
-#   do.call(rbind, lapply(cond_num('n'), function(y){
-#     temp <- create_df_plot(dat[errorsd == x & n == y])
-#     temp$condition1 <- paste0('errorsd = ', x)
-#     temp$condition2 <- paste0('n = ', y)
-#     temp
-#     }))
-#   }))
+# tabres[, metric := rep(c("TN", "FN", "FP", "TP"), nrow(tabres)/4)]
 # 
-# saveRDS(kn_df, file = "./Analysis/plot_kn.RData")
-# saveRDS(ke_df, file = "./Analysis/plot_ke.RData")
-# saveRDS(en_df, file = "./Analysis/plot_en.RData")
+# tabres <- melt(tabres, measure.vars = varsout,
+#              variable.name = "alg", value.name = "val")
+# tabres <- dcast(tabres, errorsd + n + k + hyp_val + alg ~ metric, value.var = "val")
+# tabres[, alpha := FP / (FP + TN)]
+# tabres[, beta := FN / (TP + FN)]
+# tabres[, sensitivity := 1-beta]
+# tabres[, specificity := 1-alpha]
+# tabres[, accuracy := (TP + TN) / (TP+TN+FP+FN)]
 
+
+
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("errorsd", "Outcome", "alg")]
+ggplot(df_plot, aes(x = errorsd, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance")
 ```
 
-<!-- read in interaction dfs to plot -->
-```{r, echo = F}
-kn_df <- readRDS("../Analysis/plot_kn.RData")
-ke_df <- readRDS("../Analysis/plot_ke.RData")
-en_df <- readRDS("../Analysis/plot_en.RData")
-
-```
-
-*Figure 4.* The effect of the interaction between *k* and *n* on the Sensitivity and Specificity of the algorithms.
-```{r, echo = F}
-ggplot(kn_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition1)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.70,1)) +
-  scale_color_manual(values = colours) +
-  facet_wrap(~condition2) +
-  theme_bw()
+The figure indicates that for PBF, at higher levels of residual heterogeneity, lower sensitivity is exchanged for greater specificity.
+The other algorithms do not show this pattern, as their specificity is at a ceiling.
+Their sensitivity decreases with residual heterogeneity,
+and therefore, so does their overall performance.
+This difference in pattern of effects explains why residual heterogeneity has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Note that, in contrast to other algorithms, the performance of PBF is less susceptible to residual heterogeneity.
 
 
-```
+# Discussion
 
-The general trends of $k$ and $n$ seem to hold that the higher both $n$ and $k$, the better the performance. When $n = 80$ it becomes more clear that Specificity is sacrificed for better Sensitivity, but mostly only for `prodbf_ic`.
-Especially in the case where $n = 500$ and $k = 10$, `prodbf_ic` performs very well with Sensitivity = 0.88 and Specificity = 0.95.
-This suggests a Type I error of 5\% and a power of 88\%. But also `tbf_ic` stands out as both $k$ and $n$ get larger.
+Within the scope of this simulation, PBF had relatively better inferential properties than the other algorithms under consideration.
+Although other algorithms had superior specificity, PBF had the highest levels of sensitivity.
+Thus, PBF balanced the ability to accept an informative hypothesis in the presence of a true population effect with the ability to reject the hypothesis when there was no effect.
+<!-- Conventional threshold for type 1 error: 5% -->
+<!-- Conventional threshold for power: 80% -->
+<!-- J. Cohen, Statistical Power Analysis for the -->
+<!--  Behavioral Sciences, 2nd ed. (Erlbaum, Hillsdale, -->
+<!--  NJ, 1988). This is the source of the system of power -->
+<!--  analysis described here; the power values and sam -->
+<!--  ple sizes of the illustrations derive from this book's -->
+<!--  tables. -->
+<!--  2. J -->
 
+An important caveat is that none of the algorithms met conventional criteria for power (80%) and type I error (5%).
+Overall, PBF had the best performance, with power of 76% and type I error of 24%.
+Thus, if researchers intend to synthesize evidence for an informative hypothesis across heterogeneous studies, PBF may be the most suitable method - but its limitations should be acknowledged in applied research.
 
-*Figure 5.* The effect of the interaction between *k* and *errorsd* on the Sensitivity and Specificity of the algorithms.
-```{r, echo = F}
-ggplot(ke_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition1)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.75,1)) +
-  scale_color_manual(values = colours) +
-  facet_wrap(~condition2) +
-  theme_bw()
+The overall performance of PBF increased most with increasing sample size.
+With an increasing number of groups, slightly decreasing specificity was traded off for increasing sensitivity.
+With increasing residual heterogeneity, increasing specificity was traded off for decreasing sensitivity.
 
+<!-- # Conclusions -->
 
-```
+<!-- All in all it can be said the the algorithms are conservative. In almost all conditions for all algorithms, the Specificity was higher than the Sensitivity. In fact, the only condition and algorithm when this was reversed was for `prodbf_ic` when $k = 10$ and $errorsd = 0$. This conservatism can be interpreted as good, because the probability of making a Type I error is low. However, the finding that the Sensitivity was rather low implies that there is almost no power to detect an effect. The current study only simulated conditions when the true effect size was .1 higher than the hypothesized value. Although, this is closer to reality as effect sizes in populations are rarely large. In smaller samples, larger effect sizes are more plausible however and its interesting to see if this conservatism is retained by the algorithms as the differences between $es$ and $hyp_val$ gets larger -->
 
+<!-- There were some exceptions that seemed more promising. These only apply to the `prodbf_ic` and `tbf_ic` algorithms, however. These conditions were mainly if both $k$ and $n$ are large. Real life examples usually do not have data of 10 groups, each containing 500 observations, although within the Baysian Framework this is more plausible with the use of historical datasets in current analyses. -->
 
-It seems the the marginal effect of $errorsd$ gets larger for higher values of $k$. Meaning a higher rise in power, but drop in Specificity for larger values of $k$. This is mainly seen for `prodbf_ic` and a bit for `tbf_ic`. Again, this makes sense as `prodbf_ic` only needs one group with a large BF to be able to calculate a large overall estimate. The interaction that as the $errorsd$ gets lower and $k$ gets higher, the Specificity gets lower, maybe has to do with the bounds of the BF being $0 \to \infty$. It is likely easier to get a more extreme estimate towards $\infty$ than it is towards 0. If $errorsd = 0.81$, then it becomes easier to obtain groups with more extreme estimates towards 0, and the larger values will be less influential.
-Also interesting to note is that when $errorsd = 0$ and $k = 10$ the only known condition is where an algorithm has a higher Sensitivity than Specificity. `prodbf_ic` scores 0.96 on Sensitivity and 0.77 on Specificity in this condition.
+<!-- The variation in conditions mainly affected `prodbf_ic`. The initial guess is that `prodbf_ic` can be unstable as it takes the product of the BFs for all $k$ groups. Suppose $k = 10$ and for all is found that $BF_{ic} = 2$, the `prodbf_ic` will output $2^{10} = 1024$, although no group on its own is convincingly in favour of any hypotheses. The `tbf` is more stable as it evaluates if all BFs together exceed 3. The `gpbf` is the `prodbf`$^{\frac{1}{k}}$ which for our particular example makes $2^{10*\frac{1}{10}} = 2^1 = 2$. This is the main reason that as $errorsd = 0$, the `prodbf_ic` gets more extreme as the probability of consensus between groups becomes larger when $es > hyp\_val$. -->
 
+<!-- The reason that the `iu` algorithms are more conservative is because they are not constrained by testing against only the complement of the specified hypothesis. -->
 
-*Figure 6.* The effect of the interaction between *n* and *errrorsd* on the Sensitivity and Specificity of the algorithms.
-```{r, echo = F}
-ggplot(en_df, aes(x = Sensitivity, y = Specificity, colour = Method, shape = condition1)) +
-  geom_point(size = 2.5) +
-  scale_x_continuous(limits = c(0,1))+
-  scale_y_continuous(limits = c(0.6,1)) +
-  scale_color_manual(values = colours) +
-  facet_wrap(~condition2) +
-  theme_bw()
-
-
-```
-
-It seems that in general, the effect of $errorsd$ is barely noticeable for different values of $n$. It only becomes for noticeable as $n < 80$ and only for `prodbf_ic`. 
+<!-- The overall conclusion is that the algorithms lack power to detect an effect and can not realistically be used. Only if much data is available on multiple groups do the `prodbf_ic` and `tbf_ic` become useful, Where the `prodbf_ic` sacrifices a bit more Specificity than `tbf_ic` for more Sensitivity.  -->
 
 
-# Conclusions
-All in all it can be said the the algorithms are conservative. In almost all conditions for all algorithms, the Specificity was higher than the Sensitivity. In fact, the only condition and algorithm when this was reversed was for `prodbf_ic` when $k = 10$ and $errorsd = 0$. This conservatism can be interpreted as good, because the probability of making a Type I error is low. However, the finding that the Sensitivity was rather low implies that there is almost no power to detect an effect. The current study only simulated conditions when the true effect size was .1 higher than the hypothesized value. Although, this is closer to reality as effect sizes in populations are rarely large. In smaller samples, larger effect sizes are more plausible however and its interesting to see if this conservatism is retained by the algorithms as the differences between $es$ and $hyp_val$ gets larger
-
-There were some exceptions that seemed more promising. These only apply to the `prodbf_ic` and `tbf_ic` algorithms, however. These conditions were mainly if both $k$ and $n$ are large. Real life examples usually do not have data of 10 groups, each containing 500 observations, although within the Baysian Framework this is more plausible with the use of historical datasets in current analyses.
-
-The variation in conditions mainly affected `prodbf_ic`. The initial guess is that `prodbf_ic` can be unstable as it takes the product of the BFs for all $k$ groups. Suppose $k = 10$ and for all is found that $BF_{ic} = 2$, the `prodbf_ic` will output $2^{10} = 1024$, although no group on its own is convincingly in favour of any hypotheses. The `tbf` is more stable as it evaluates if all BFs together exceed 3. The `gpbf` is the `prodbf`$^{\frac{1}{k}}$ which for our particular example makes $2^{10*\frac{1}{10}} = 2^1 = 2$. This is the main reason that as $errorsd = 0$, the `prodbf_ic` gets more extreme as the probability of consensus between groups becomes larger when $es > hyp\_val$.
-
-The reason that the `iu` algorithms are more conservative is because they are not constrained by testing against only the complement of the specified hypothesis.
-
-The overall conclusion is that the algorithms lack power to detect an effect and can not realistically be used. Only if much data is available on multiple groups do the `prodbf_ic` and `tbf_ic` become useful, Where the `prodbf_ic` sacrifices a bit more Specificity than `tbf_ic` for more Sensitivity. 
-
-
-```{r, echo = F, eval = F}
-rm(list = ls())
-gc(full = T, reset = T)
-cat("\014")
-```
+<!-- ```{r, echo = F, eval = F} -->
+<!-- rm(list = ls()) -->
+<!-- gc(full = T, reset = T) -->
+<!-- cat("\014") -->
+<!-- ``` -->
 
