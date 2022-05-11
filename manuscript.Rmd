@@ -69,24 +69,24 @@ set.seed(42)
 knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
 ```
 
-
 Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [REF].
 Replication research has come into focus as a solution to this crisis
 and a way to derive knowledge that will stand the test of time.
 In step with this interest in replication research,
 research synthesis methods have blossomed.
 These methods aggregate the findings of multiple studies,
-either quantitatively [REF] or qualitatively [REF TMSR].
-Between-studies heterogeneity is a key challenge in research synthesis.
-Heterogeneity appears when studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
+and thus enable drawing overarching conclusions across multiple studies.
+Both quantitative [REF] and qualitative [REF TMSR] research synthesis methods exist, but the present paper focuses on quantitative methods.
 
-Meta-analysis is the most common type of research synthesis.
+A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity.
+Heterogeneity appears when studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
+Meta-analysis is the most common research synthesis method.
 In meta-analysis, heterogeneity can be accounted for in four ways.
 First, if studies are exact replications, one can assume that no heterogeneity exists and conduct a fixed-effect meta-analysis to estimate their common population effect.
 Second, when differences between studies can be assumed to be random, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects.
 Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
 And finally, when there are many potential differences and it is not known beforehand which are relevant,
-exploratory techniques like random forest meta-analysis and penalized metaregression can be used to identify relevant moderators.
+exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators.
 Each of these approaches requires making different assumptions about the nature of heterogeneity.
 
 An alternative approach that does not impose such assumptions is Bayesian evidence synthesis [BES, REF Kuiper 2013].
@@ -116,9 +116,12 @@ The first was a naive "vote count" algorithm,
 which used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$.
 The second was a random-effects meta-analysis (RMA), which is the standard in the field.
 For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
-Third was an individual participant data (IPD) meta-analysis;
-a multilevel model clustered by sample.
-This algorithm, too, was evaluated using a 90% confidence interval for the overall effect size.
+Third was an individual participant data (IPD) meta-analysis.
+Like classic meta-analysis, IPD is a multilevel model, clustered by sample.
+In contrast to classic meta-analysis, however, IPD freely estimates variance at the first level, because raw data are available.
+The PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
+It is thus informative to compare the PBF to both these methods.
+IPD was also evaluated using a 90% confidence interval for the overall effect size.
 
 ## Performance indicators
 
@@ -160,6 +163,7 @@ tab <- tab[tab$Metric %in% c("sensitivity", "specificity", "accuracy"),]
 rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
 ```
+First, we examined overall model performance across conditions.
 These results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
 In contrast, specificity was very high for all algorithms except PBF.
 This suggests that the other algorithms classified most conditions as negatives (no effect found),
