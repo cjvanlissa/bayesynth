@@ -1,0 +1,311 @@
+---
+title             : "Tutorial: Aggregate evidence from heterogeneous replication studies using the product Bayes factor"
+shorttitle        : "PRODUCT BAYES FACTOR"
+
+author:
+  - name: "Caspar J. Van Lissa"
+    affiliation: "1,2"
+    corresponding: yes
+    address: "Padualaan 14, 3584CH Utrecht, The Netherlands"
+    email: "c.j.vanlissa@uu.nl"
+    role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
+      - Conceptualization
+      - Formal Analysis
+      - Funding acquisition
+      - Methodology
+      - Project administration
+      - Software
+      - Supervision
+      - Writing – original draft
+      - Writing – review & editing
+  - name: "Eli-Boaz Clapper"
+    affiliation: "1"
+    role:
+      - Formal Analysis
+      - Writing – original draft
+      - Writing – review & editing
+affiliation:
+  - id            : "1"
+    institution   : "Utrecht University, dept. Methodology & Statistics"
+  - id            : "2"
+    institution   : "Open Science Community Utrecht"
+
+authornote: |
+  This is a preprint paper, generated from Git Commit # `r substr(gert::git_commit_id(),1,7)`. This work was funded by a NWO Veni Grant (NWO Grant Number VI.Veni.191G.090), awarded to the lead author.
+
+abstract: |
+  TODO
+  
+keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
+wordcount         : "5356"
+
+bibliography      : ["references.bib"]
+
+floatsintext      : no
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : yes
+mask              : no
+draft             : no
+
+documentclass     : "apa6"
+classoption       : "man"
+knit: worcs::cite_essential
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+run_everything <- FALSE
+library("papaja")
+library(tidySEM)
+library(kableExtra)
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
+```
+
+Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [REF].
+Replication research has come into focus as a solution to this crisis
+and a way to derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021].
+In step with this interest in replication research,
+research synthesis methods have blossomed [REF].
+These methods aggregate the findings of multiple studies,
+and thus enable drawing overarching conclusions across multiple studies.
+Both quantitative [e.g., @vanlissaSelectRelevantModerators2021] and qualitative [e.g., @vanlissaMappingPhenomenaRelevant2021] research synthesis methods exist.
+The present paper focuses on quantitative methods.
+
+A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009].
+Heterogeneity appears when, for example, studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
+Meta-analysis is the most common research synthesis method [@borensteinIntroductionMetaAnalysis2009].
+In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissaSmallSampleMetaanalyses2020].
+First, if studies are exact replications, one can assume that no heterogeneity exists and conduct a fixed-effect meta-analysis to estimate their common population effect.
+Second, when differences between studies can be assumed to be random, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects.
+Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
+And finally, when there are many potential differences and it is not known beforehand which are relevant,
+exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators.
+Each of these approaches requires making different assumptions about the nature of heterogeneity.
+
+An alternative approach that does not impose such assumptions is Bayesian evidence synthesis [BES, @kuiperCombiningStatisticalEvidence2013].
+BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies.
+The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
+A Bayes factor can be interpreed as the ratio of evidence in favor of $H_i$ divided by evidence against it.
+Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
+These Bayes factors can be synthesized across studies by taking their product.
+The resulting product Bayes factor PBF summarizes the total evidence for the hypothesis.
+Note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
+
+This tutorial paper introduces the first implementation of BES in userfriendly open source software.
+A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `r as.character(packageVersion("bain"))`.
+This paper presents a simulation study to validate the method and benchmark it against alternative evidence synthesis methods,
+and illustrates several use cases through reproducible examples.
+
+# Simulation study
+
+The present simulation study set out to validate the PBF algorithm.
+For each iteration of the simulation, we simulated a correlation coefficient in multiple samples.
+This correlation coefficient was either equal to or larger than an informative hypothesis value.
+In this study, the informative hypothesis was kept constant, and specified as $H_i: \rho > .1$.
+We then computed a PBF to determine the amount of evidence in favor of $H_i$ across these multiple samples.
+A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported.
+As a benchmark for comparison, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
+The first was a naive "vote count" algorithm,
+which used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$.
+The second was a random-effects meta-analysis (RMA), which is the standard in the field.
+For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
+Third was an individual participant data (IPD) meta-analysis.
+Like classic meta-analysis, IPD is a multilevel model, clustered by sample.
+In contrast to classic meta-analysis, however, IPD freely estimates variance at the first level, because raw data are available.
+The PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
+It is thus informative to compare the PBF to both these methods.
+IPD was also evaluated using a 90% confidence interval for the overall effect size.
+
+## Performance indicators
+
+For each algorithm, a confusion matrix was obtained by tabulating inferential decisions made using the criteria described above against the population status of the hypothesis (true or false).
+This matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
+These quantities were summarized as sensitivity, $1-\frac{FN}{TP + FN}$, the probability of concluding the hypothesis is false given that it was truly false in the population,
+and specificity, $1-\frac{FP}{FP + TN}$, the probability of concluding the hypothesis is true given that it was true in the population.
+The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive/true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
+
+## Design factors
+
+To examine performance in a range of realistic scenarios,
+several design factors were manipulated:
+The population effect size $\rho \in (-0.1, 0, 0.1, 0.2)$,
+the sample size per group $n \in (20, 80, 200, 500)$,
+the number of groups $k \in (2, 3, 10)$, where 2 is the minimum number of groups and 10 is a very large number of groups,
+and the reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is the assumed when analyzing correlations between observed items or scale scores.
+The design factors combined to produce `r out$conditions` unique conditions.
+For all simulation conditions, 1000 data sets were generated. 
+
+```{r, echo = F}
+library(data.table) # load in libraries
+library(DT)
+library(ggplot2)
+rename <- c("prodbf" = "PBF", "gpbf" = "gPBF", "tbf" = "TBF", "ipd" = "IPD", "rma" = "RMA", "allsig" = "VC")
+
+```
+
+# Results
+
+```{r tabconf, echo = F, message=F}
+tab <- read.csv("confusion.csv", stringsAsFactors = FALSE)
+names(tab)[1] <- "Metric"
+tab$Metric <- gsub("^.+_", "", tab$Metric)
+tab <- tab[!tab$Metric == "lr", !grepl("iu", names(tab))]
+names(tab) <- gsub("_ic", "", names(tab))
+names(tab)[match(names(rename), names(tab))] <- rename
+tab <- tab[tab$Metric %in% c("sensitivity", "specificity", "accuracy"),]
+rownames(tab) <- NULL
+knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
+```
+First, we examined overall model performance across conditions.
+These results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
+In contrast, specificity was very high for all algorithms except PBF.
+This suggests that the other algorithms classified most conditions as negatives (no effect found),
+regardless of the existence of a population effect.
+The PBF trades a loss of specificity for increased sensitivity,
+and average levels of both were approximately equal.
+As the PBF vastly outperformed other BFs, these were omitted from further analysis.
+
+## Effect of simulation conditions
+
+We examined the effect of simulation conditions on overall accuracy.
+
+```{r tabeffect, echo = FALSE}
+tab <- read.csv("effect_of_conditions.csv", stringsAsFactors = FALSE)
+tab <- tab[, !grepl("(gpbf|tbf)", names(tab))]
+tab <- tab[, c("condition", "prodbf_ic", "rma", "ipd", "allsig", "prodbf_ic.vs..rma", "ipd.vs..prodbf_ic", "allsig.vs..prodbf_ic")]
+names(tab) <-  c("Factor", "PBF", "RMA", "IPD", "VC", "vs RMA", "vs IPD", "vs VC")
+
+knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
+```
+PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
+
+### Effect of sample size
+
+```{r fign, fig.cap="Mean performance by sample size"}
+res <- readRDS("confusion_by_cond.RData")
+res <- res[res$alg %in% c("ipd", "rma", "allsig", "prodbf_ic"), ]
+
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("n", "Outcome", "alg")]
+ggplot(df_plot, aes(x = n, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance", x = "Sample size")
+```
+
+Figure \@ref(fig:fign) indicates that for PBF, both sensitivity and specificity increase with sample size.
+The other algorithms also show increasing sensitivity, but not specificity, which is at a ceiling.
+This difference explains the effect of reliability on the diference between algorithms (see Table \@ref(tab:tabeffect)).
+
+### Effect of number of groups
+
+```{r, fig.cap="Mean performance by number of groups"}
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("k", "Outcome", "alg")]
+ggplot(df_plot, aes(x = k, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance", x = "Number of groups")
+```
+The figure indicates that, for PBF at higher levels of k, lower sensitivity is exchanged for greater specificity.
+The other algorithms do not show this pattern, as their specificity is at a ceiling.
+This difference in pattern of effects explains why number of groups has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Only VC shows decreasing sensitivity with an increasing number of groups;
+this is because the probability of obtaining any false negatives increases with the number of groups.
+
+
+### Effect of reliability
+
+```{r, fig.cap="Mean performance by reliability"}
+
+# dat <- readRDS(file.path("Sim", "sim_results_2022-05-07.RData"))
+# varsout <- c("ipd", "rma", "allsig", "prodbf_ic")
+# varspred <- c("errorsd", "n", "k", "hyp_val")
+# 
+# df_plot <- dat[!es < .1,  lapply(.SD, function(var) {
+#   as.vector(table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE"))))
+# }), .SDcols = varsout, by = "errorsd"]
+# 
+# tabres[, metric := rep(c("TN", "FN", "FP", "TP"), nrow(tabres)/4)]
+# 
+# tabres <- melt(tabres, measure.vars = varsout,
+#              variable.name = "alg", value.name = "val")
+# tabres <- dcast(tabres, errorsd + n + k + hyp_val + alg ~ metric, value.var = "val")
+# tabres[, alpha := FP / (FP + TN)]
+# tabres[, beta := FN / (TP + FN)]
+# tabres[, sensitivity := 1-beta]
+# tabres[, specificity := 1-alpha]
+# tabres[, accuracy := (TP + TN) / (TP+TN+FP+FN)]
+
+
+
+df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+             variable.name = "Outcome", value.name = "val")
+df_plot <- df_plot[ ,list(mean=mean(val)), by=c("errorsd", "Outcome", "alg")]
+ggplot(df_plot, aes(x = errorsd, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(y = "Mean performance", x = "Reliability")
+```
+
+The figure indicates that for PBF, at higher reliability, lower sensitivity is exchanged for greater specificity.
+The other algorithms do not show this pattern, as their specificity is at a ceiling.
+Their sensitivity decreases with lower reliability,
+and therefore, so does their overall performance.
+This difference in pattern of effects explains why reliability has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Note that, in contrast to other algorithms, the performance of PBF is less susceptible to reliability.
+
+
+# Discussion
+
+Within the scope of this simulation, PBF had relatively better inferential properties than the other algorithms under consideration.
+Although other algorithms had superior specificity, PBF had the highest levels of sensitivity.
+Thus, PBF balanced the ability to accept an informative hypothesis in the presence of a true population effect with the ability to reject the hypothesis when there was no effect.
+<!-- Conventional threshold for type 1 error: 5% -->
+<!-- Conventional threshold for power: 80% -->
+<!-- J. Cohen, Statistical Power Analysis for the -->
+<!--  Behavioral Sciences, 2nd ed. (Erlbaum, Hillsdale, -->
+<!--  NJ, 1988). This is the source of the system of power -->
+<!--  analysis described here; the power values and sam -->
+<!--  ple sizes of the illustrations derive from this book's -->
+<!--  tables. -->
+<!--  2. J -->
+
+An important caveat is that none of the algorithms met conventional criteria for power (80%) and type I error (5%).
+Overall, PBF had the best performance, with power of 76% and type I error of 24%.
+Thus, if researchers intend to synthesize evidence for an informative hypothesis across heterogeneous studies, PBF may be the most suitable method - but its limitations should be acknowledged in applied research.
+
+The overall performance of PBF increased most with increasing sample size.
+With an increasing number of groups, slightly decreasing specificity was traded off for increasing sensitivity.
+With increasing reliability, increasing specificity was traded off for decreasing sensitivity.
+
+
+
+# Results
+
+# Discussion
+
+
+\newpage
+
+# References
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id="refs" custom-style="Bibliography"></div>
+\endgroup
