@@ -118,6 +118,7 @@ stats <- apply(res, 2, function(x){
 stats <- stats[, order(stats["accuracy",], decreasing = T)]
 write.csv(stats, "confusion.csv")
 
+saveRDS(out, "out.RData")
 # library(ggplot2)
 # df_plot <- data.frame(Method = colnames(stats),
 #                       Sensitivity = stats["sensitivity", ],
