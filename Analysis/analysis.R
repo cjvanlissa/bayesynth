@@ -1,7 +1,7 @@
 #dat <- readRDS("tabres.RData")
 library(data.table)
 outlist <- list()
-dat <- readRDS(file.path("Sim", "sim_results_2022-05-12.RData"))
+dat <- readRDS(file.path("Sim", "sim_results_2022-05-08.RData"))
 lapply_at <- function(var, truees) {
   results <- sapply(var, function(var) {
     table(ordered(truees > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE")))
@@ -23,9 +23,9 @@ dat <- dat[!es < .1, ]
 outlist$simreps <- nrow(dat)
 # Overall
 #res <- dat[!es < .1, lapply_at(.SD, truees = es), .SDcols = varsout]
-
-
-tabres <- lapply(c(.2, .3), function(thises){
+esvals <- unique(dat$es)
+esvals <- esvals[!esvals == .1]
+tabres <- lapply(esvals, function(thises){
   out <- dat[es %in% c(.1, thises),  lapply(.SD, function(var) {
     as.vector(table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE"))))
   }), .SDcols = varsout, by = varspred]
