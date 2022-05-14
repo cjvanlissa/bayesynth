@@ -39,7 +39,7 @@ abstract: |
 keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
 wordcount         : "5356"
 
-bibliography      : ["references.bib"]
+bibliography      : ["product_bayes.bib"]
 
 floatsintext      : no
 figurelist        : no
@@ -295,6 +295,8 @@ With increasing reliability, increasing specificity was traded off for decreasin
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
 
 
 
