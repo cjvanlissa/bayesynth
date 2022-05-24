@@ -3,8 +3,8 @@ rm(list=ls(all.names = T))
 cat("\014")
 
 # Delete folder where previous results are in and create new 'Results' folder
-unlink("./sim/Results", recursive = T)
-dir.create("./sim/Results")
+# unlink("./sim/Results", recursive = T)
+# dir.create("./sim/Results")
 
 #load necessary packages
 dependencies <- c('MASS', 'bain', 'metafor', 'lme4', 'mvtnorm')
