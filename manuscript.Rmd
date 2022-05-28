@@ -82,26 +82,33 @@ Whether replications are conceptual or exact in nature, differences in outcomes 
 Such differences due to virtue of not being the exact same study lead to variability in the outcome that can both be attributed to random and systematic measurement error.  
 
 In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissaSmallSampleMetaanalyses2020].
-First, if studies are exact replications, one may assume that all heterogeneity in the outcome exists because of random measurement error. 
-A fixed-effect meta-analysis can then conducted to estimate the common population effect. 
-Second, when heterogeneity between studies can be assumed to be random, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
+First, if studies are exact replications, one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
+Second, when heterogeneity between studies can be assumed to be because of random measurement error, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
 Third, when there are a few systematic differences between studies, meta-regression can be performed in which the variables that cause systematic differences in outcomes are controlled for. 
 And finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
 
-<!-- maybe provide more examples of why hetergeneity can be an issue in meta-analysis. For example that the aggregation of model parameters is not as straightforward because they can be in different units.while BF has no unit and can thus be easily aggregated -->
+<!-- maybe provide more examples of why hetergeneity can be an issue in meta-analysis. For example that the aggregation of model parameters is not as straightforward because they can be in different units (e.g. correlation vs odds ratios). while BF has no unit and can thus be easily aggregated. Caspar, do you agree that such examples may strengthen the paper? -->
 
-Although each approach has its own specific assumptions, they are all regarding the nature of heterogeneity. 
+Although each approach has its own specific assumptions, they all are regarding the nature of heterogeneity. 
 An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
-Instead of aggregating parameter estimates of an effect over studies, which, due to heterogeneity, is not a straightforward endeavour, BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies. 
+Instead of aggregating parameter estimates of an effect over studies, which, due to heterogeneity, is not a straightforward endeavour, BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies. The evidence in favor of $H_i$ is relative to some alternative hypothesis $H_a$.
 The only assumptions BES has is that all study-specific hypotheses aim to provide evidence for the same underlying theoretical relationship, although the direction of effect, if any, is arbitrary.
-The amount of evidence for this hypothesis in each study and over all studies is expressed as a Bayes factor (BF). 
-A Bayes factor can be interpreted as the ratio of evidence in favor of $H_i$ divided by evidence against it. 
-Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it. 
+The amount of evidence for this $H_i$ against an $H_a$ in each study and over all studies is expressed as a Bayes factor (BF). 
+A Bayes factor can be interpreted as the ratio of evidence in favor of $H_i$ divided by evidence in favor of $H_a$. 
+Thus, $BF_{ia}$ = 10 means that the data provide ten times more support in favor of $H_i$ than $H_a$. 
 The BFs in each study are synthesized to one value by taking their product. 
-This value is known as the Product Bayes Factor (PBF) and it summarizes the total evidence for the hypothesis. 
+This value is known as the Product Bayes Factor (PBF) and it summarizes the total evidence for the hypothesis against an alternative. 
 <!--BES thus requires its users to formulate an informative hypothesis about a theoretical relationship and evaluate it using the data in studies that examined that relationship -->. 
-In summary, BES a three stage method; 1.) formulate a informative hypothesis 2.) calculate the BF in each study examining the theoretical relationship and 3.) take the product of all BFs to obtain the PBF. 
+In summary, BES is a three stage method where first both an $H_i$ and $H_a$ are formulated, second a $BF_{ia}$ is calculated in each study under consideration and, finally the product of all $BF_{ia}$'s is taken to obtain the PBF reflecting the overall support for $H_i$ over $H_a$. 
 Do note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
+
+What also should be kept in mind is that meta-analysis and BES do answer different research questions.
+Meta-analysis evaluates a certain theoretical relationship between variables. 
+It pools parameter estimates that evaluate this relationship over multiple studies to obtain a combined effect. 
+BES on the other hand compares a specific $H_i$ against some $H_a$.
+Aggregating support for this $H_i$ against $H_a$ over studies shows how robust the evaluation is against heterogeneity.
+The different answer from both methods thus make for complementary information. Meta-analysis provides support for or against a theoretical relationship in general, where BES provides support for a hypothesis about this theoretical relationship against some alternative.
+Whether only one of the methods or both should be used depends on the goal of the evidence synthesis.
 
 This tutorial paper introduces the first implementation of BES in user-friendly open source software.
 A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `r as.character(packageVersion("bain"))`.
@@ -112,19 +119,18 @@ and illustrates several use cases through reproducible examples.
 
 The present simulation study set out to validate the PBF algorithm. 
 108 different plausible simulation conditions were specified, where each condition was repeated 1000 times, each time with different simulated data.
-For each of the 108 x 1000 iterations of the simulation, we simulated a correlation coefficient in multiple groups representing different studies examining a theoretical relationship.
-This correlation coefficient was either equal to or .1 units larger than an informative hypothesis value.
+For each of the 108 x 1000 iterations of the simulation, we simulated a correlation coefficient, $\rho$, in multiple groups representing different studies examining a theoretical relationship.
+$\rho$ was either equal to or .1 units larger than an informative hypothesis value.
 This informative hypothesis was kept constant over all iterations, and was specified as $H_i: \rho > .1$.
 For every group in the iteration, the $H_i$ was tested against its complementary hypothesis: $H_c: \rho \leq .1$. 
 This allowed the calculation of the $BF_{ic}$ for all groups.
-The product was taken of the $BF_{ic}$ over all groups to compute the PBF and determine the amount of evidence in favor of $H_i$ across these multiple samples.
+The product was taken of the $BF_{ic}$ over all groups to compute the PBF and determine the amount of evidence in favor of $H_i$ over $H_c$ across the multiple groups
 A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported.
 As a benchmark for comparing the PBF, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent studies.
 Among these were two other Bayesian aggregation methods:
 the gPBF, which takes the geometric mean of the $BF_{ic}$ over all groups, defined as $\sqrt[k]{PBF}$,
 and the Together Bayes Factor (TBF), defined as <!-- *formula for the TBF* -->
-Other algorithms included a naive "vote count" algorithm,
-which used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of groups, i.e.: $H_0: \rho = .1$.
+Other algorithms included a naive "vote count" algorithm, which used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of groups, i.e.: $H_0: \rho = .1$.
 The second was a random-effects meta-analysis (RMA), which is the standard in the field.
 For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
 Third was an individual participant data (IPD) meta-analysis.
