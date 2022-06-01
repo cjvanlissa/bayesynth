@@ -60,27 +60,3 @@ agg_bf(y~x, grouping = 'k', data = M, algorithm = 'gpbf_ic', hypothesis = '= 0.2
 agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_iu', hypothesis = '> -0.2')
 agg_bf(y~x, grouping = 'k', data = M, algorithm = 'tbf_ic', hypothesis = '= -0.2')
 
-
-
-# pbf <- function(x, hypothesis, ...){
-#   cl <- match.call()
-#   
-#   if(all(sapply(x, inherits, what = "bain"))){ #if every object of x is a bain object...
-#     
-#     hypotheses <- sapply(x, function(y){y$hypotheses}) # check if hypotheses are equal
-#     if(length(unique(hypotheses)) != 1){
-#       stop("hypotheses of bain objects are not all equal")}
-#     
-#     BFs <- sapply(x, function(y){y$fit$BF.c[1]})
-#     res <- list(BFs = BFs, pbf = prod(BFs)) # obtain pbf ic, might need to change dependent on alternative hyp
-#     
-#   } else {                                  # if objects are not bain objects
-#     cl[[1L]] <- quote(bain)                 # change function call to bain
-#     
-#     cl[[x]] <- lapply(x, eval.parent, cl)   # run bain(x[[x], hypothesis]) op alle objecten in x
-#     cl[[1L]] <- quote(pbf)                  # change function call back to pbf
-#     eval.parent(cl)                         # call function pbf again, with x now being list of bain objects
-#   }
-#   return(res)
-# }
-# pbf(dat, "x=y")

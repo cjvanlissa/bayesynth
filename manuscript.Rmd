@@ -87,8 +87,6 @@ Second, when heterogeneity between studies can be assumed to be because of rando
 Third, when there are a few systematic differences between studies, meta-regression can be performed in which the variables that cause systematic differences in outcomes are controlled for. 
 And finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
 
-<!-- maybe provide more examples of why hetergeneity can be an issue in meta-analysis. For example that the aggregation of model parameters is not as straightforward because they can be in different units (e.g. correlation vs odds ratios). while BF has no unit and can thus be easily aggregated. Caspar, do you agree that such examples may strengthen the paper? -->
-
 Although each approach has its own specific assumptions, they all are regarding the nature of heterogeneity. 
 An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
 Instead of aggregating parameter estimates of an effect over studies, which, due to heterogeneity, is not a straightforward endeavour, BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies. The evidence in favor of $H_i$ is relative to some alternative hypothesis $H_a$.
