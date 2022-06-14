@@ -70,37 +70,47 @@ set.seed(42)
 knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
 ```
 
-Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [REF].
-Replication research has come into focus as a solution to this crisis
-and a way to derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021].
+Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [@brembs2018prestigious].
+Replication research has come into focus as a solution to this crisis and as a way to derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021]. 
+<!--For many, highly regarded published studies however, results could not be replicated [@brembs2018prestigious].-->
+<!--A lack of validating replication research partly strengthened the belief that single studies results should solely be viewed as part of many studies studying the same research question [@asendorpf2016recommendations]. -->
+<!--Evidence over multiple studies must be aggregated to derive more reliable conclusions and within this paradigm, research synthesis methods have blossomed [@shadish2015meta; @nakagawa2019research].-->
 In step with this interest in replication research,
 research synthesis methods have blossomed [REF].
 These methods aggregate the findings of multiple studies,
 and thus enable drawing overarching conclusions across multiple studies.
-Both quantitative [e.g., @vanlissaSelectRelevantModerators2021] and qualitative [e.g., @vanlissaMappingPhenomenaRelevant2021] research synthesis methods exist.
-The present paper focuses on quantitative methods.
+The present paper focuses on quantitative methods for research synthesis [e.g., @vanlissaSelectRelevantModerators2021], although qualitative [e.g., @vanlissaMappingPhenomenaRelevant2021] research synthesis methods also exist. 
 
 A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009].
 Heterogeneity appears when, for example, studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
-Meta-analysis is the most common research synthesis method [@borensteinIntroductionMetaAnalysis2009].
+The most common quantitative research synthesis method is meta-analysis,
+in which results of different studies are aggregated to estimate an aggregate effect size [@borensteinIntroductionMetaAnalysis2009].
 In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissaSmallSampleMetaanalyses2020].
-First, if studies are exact replications, one can assume that no heterogeneity exists and conduct a fixed-effect meta-analysis to estimate their common population effect.
-Second, when differences between studies can be assumed to be random, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects.
+First, if studies are exact replications, one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
+Second, when heterogeneity between studies can be assumed to be because of random measurement error, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
 Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
-And finally, when there are many potential differences and it is not known beforehand which are relevant,
-exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators.
+And finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
 Each of these approaches requires making different assumptions about the nature of heterogeneity.
 
-An alternative approach that does not impose such assumptions is Bayesian evidence synthesis [BES, @kuiperCombiningStatisticalEvidence2013].
-BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies.
+An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
+Instead of aggregating effect sizes, BES aggregates the evidence in favor of an informative hypothesis $H_i$ across studies.
 The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
 A Bayes factor can be interpreed as the ratio of evidence in favor of $H_i$ divided by evidence against it.
 Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
 These Bayes factors can be synthesized across studies by taking their product.
-The resulting product Bayes factor PBF summarizes the total evidence for the hypothesis.
+The resulting product Bayes factor (PBF) summarizes the total evidence for the hypothesis.
 Note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
+The only assumption of BES is that all study-specific hypotheses provide evidence about the same underlying theoretical relationship.
 
-This tutorial paper introduces the first implementation of BES in userfriendly open source software.
+Although meta-analysis and BES are both research synthesis methods, they answer different research questions.
+Meta-analysis estimates the value or distribution of a population effect size. 
+It pools estimates of this effect size across multiple studies to obtain an overall estimate of the effect size.
+It thus answers the question: Givern certain assumptions about between-studies heterogeneity, what is the average population effect size?
+BES, on the other hand, aggregates evidence in favor of an informative hypothesis across multiple studies.
+It thus answers the question: Do all these studies support the informative hypothesis?
+Both methods thus provide complementary information.
+
+This tutorial paper introduces the first implementation of BES in user-friendly open source software.
 A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `r as.character(packageVersion("bain"))`.
 This paper presents a simulation study to validate the method and benchmark it against alternative evidence synthesis methods,
 and illustrates several use cases through reproducible examples.
@@ -131,8 +141,9 @@ IPD was also evaluated using a 90% confidence interval for the overall effect si
 
 For each algorithm, a confusion matrix was obtained by tabulating inferential decisions made using the criteria described above against the population status of the hypothesis (true or false).
 This matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
-These quantities were summarized as sensitivity, $1-\frac{FN}{TP + FN}$, the probability of concluding the hypothesis is false given that it was truly false in the population,
-and specificity, $1-\frac{FP}{FP + TN}$, the probability of concluding the hypothesis is true given that it was true in the population.
+These quantities were summarized as sensitivity, $1-\frac{FN}{TP + FN}$, the probability of concluding the hypothesis is false given that it was truly false in the population, <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
+<!--CJ: This is all the same, see https://en.wikipedia.org/wiki/Sensitivity_and_specificity -->
+and specificity, $1-\frac{FP}{FP + TN}$, the probability of concluding the hypothesis is true given that it was also true in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
 The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive/true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
 
 ## Design factors
@@ -141,8 +152,8 @@ To examine performance in a range of realistic scenarios,
 several design factors were manipulated:
 The sample size per group $n \in (20, 80, 200, 500)$,
 the number of groups $k \in (2, 3, 10)$, where 2 is the minimum number of groups and 10 is a very large number of groups,
-and the reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is the assumed when analyzing correlations between observed items or scale scores.
-The design factors combined to produce `r out$simreps/1000` unique conditions.
+and the reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is assumed when analyzing correlations between observed items or scale scores.
+The design factors combined to produce `r out$conditions` unique conditions.
 For all simulation conditions, 1000 data sets were generated. 
 
 ```{r, echo = F}
@@ -186,6 +197,8 @@ names(tab)[grepl("\\.{2}", names(tab))] <- paste0("vs ", gsub("(\\.|PBF|vs)", ""
 knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
 ```
 PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
+<!-- should we also test for interaction effects? I seem to remember that there were some interesting effects of errorsd*k and n*k -->
+<!-- CJ: I don't think so, that might be more relevant for one of the papers that focused on the simulation study. For this tutorial, a simpler sim is fine. -->
 
 ### Effect of sample size
 

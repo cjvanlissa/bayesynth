@@ -60,5 +60,3 @@ agg_bf(y~x, grouping = 'k', data = M, algorithm = 'gpbf_ic', hypothesis = '= 0.2
 agg_bf(y~x, grouping = 'k', data = M, algorithm = 'prodbf_iu', hypothesis = '> -0.2')
 agg_bf(y~x, grouping = 'k', data = M, algorithm = 'tbf_ic', hypothesis = '= -0.2')
 
-
-
