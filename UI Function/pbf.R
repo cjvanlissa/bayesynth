@@ -30,8 +30,8 @@ pbf <- function(x, ...){
       # Else, go back to step 1, but now merge merged with list item 3
     }
   }
-  BFs <- sapply(x, function(y){y$fit$BF.c[which(y$hypotheses %in% hyps)]})
-  res <- list(BFs = BFs, pbf = prod(BFs)) # obtain pbf ic, might need to change dependent on alternative hyp
+  BFs <- do.call(cbind, lapply(x, function(y){y$fit$BF.c[which(y$hypotheses %in% hyps)]}))
+  res <- list(BFs = BFs, pbf = apply(BFs, 1, prod)) # obtain pbf ic, might need to change dependent on alternative hyp
   return(res)
 }
 
@@ -46,3 +46,24 @@ pbf(ttests, "x=y")
 # CJ: This does not require specifying a hypothesis in pbf() call
 bains <- lapply(ttests,bain, hypothesis = "x=y")
 pbf(bains)
+
+
+# Evaluation of informative hypotheses for an ANOVA
+# make a factor of variable site
+sesamesim$site <- as.factor(sesamesim$site)
+# execute an analysis of variance using lm() which, due to the -1, returns
+# estimates of the means of postnumb per group
+anov <- lm(postnumb~site-1,sesamesim[1:75,])
+# take a look at the estimated means and their names
+coef(anov)
+# set a seed value
+set.seed(100)
+# use the names to formulate and test hypotheses with bain
+results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
+
+anov <- lm(postnumb~site-1,sesamesim[76:150,])
+results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2>site5>site1>site3>site4")
+anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
+results3 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3=site4>site5; site2>site5>site1>site3>site4")
+
+pbf(list(results, results2, results3))
