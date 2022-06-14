@@ -20,7 +20,6 @@ pbf <- function(x, ...){
   if(length(x) > 1){
     hyps <- x[[1]]$hypotheses
     for(i in length(x)-1){
-      browser()
       hyps <- c(hyps, x[[i+1]]$hypotheses)
       # Drop all non-duplicated hypotheses from merged
       hyps <- hyps[duplicated(hyps)]
@@ -44,5 +43,6 @@ ttests <- lapply(1:4, function(i){
 pbf(ttests, "x=y")
 
 # and with bain-objects
+# CJ: This does not require specifying a hypothesis in pbf() call
 bains <- lapply(ttests,bain, hypothesis = "x=y")
-pbf(bains, "x=y")
+pbf(bains)
