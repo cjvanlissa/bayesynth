@@ -3,8 +3,7 @@ library(bain)
 # pbf moet ook werken voor meerdere hypotheses en de posterior model probabilities
 # moeten gereturned worden.
 # zodra functie compleet is, fork bain en implementeer
-pbf <- function(x, hypothesis, ...){
-  
+pbf <- function(x, ...){
   if(!all(sapply(x, inherits, what = "bain"))){ 
     cl <- match.call()
     cl[[1L]] <- quote(bain)  
@@ -17,11 +16,22 @@ pbf <- function(x, hypothesis, ...){
     cl[[1L]] <- quote(pbf)
     eval.parent(cl)
   }
-  
-  hypotheses <- sapply(x, function(y){y$hypotheses}) # check if hypotheses are equal
-  if(length(unique(hypotheses)) != 1){
-    stop("hypotheses of bain objects are not all equal")}
-  BFs <- sapply(x, function(y){y$fit$BF.c[1]})
+  # Merge the hypotheses from list item 1 and 2 into object merged
+  if(length(x) > 1){
+    hyps <- x[[1]]$hypotheses
+    for(i in length(x)-1){
+      browser()
+      hyps <- c(hyps, x[[i+1]]$hypotheses)
+      # Drop all non-duplicated hypotheses from merged
+      hyps <- hyps[duplicated(hyps)]
+      # If merged now has length 0, throw error
+      if(length(hyps) == 0){
+        stop("The objects passed to pbf() have no hypotheses in common.")
+      }
+      # Else, go back to step 1, but now merge merged with list item 3
+    }
+  }
+  BFs <- sapply(x, function(y){y$fit$BF.c[which(y$hypotheses %in% hyps)]})
   res <- list(BFs = BFs, pbf = prod(BFs)) # obtain pbf ic, might need to change dependent on alternative hyp
   return(res)
 }
