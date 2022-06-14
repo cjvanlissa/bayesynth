@@ -71,42 +71,43 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
 
 Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [@brembs2018prestigious].
 Replication research has come into focus as a solution to this crisis and as a way to derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021]. 
-For many, highly regarded published studies however, results could not be replicated [@brembs2018prestigious].
-A lack of validating replication research partly strengthened the belief that single studies results should solely be viewed as part of many studies studying the same research question [@asendorpf2016recommendations]. 
-Evidence over multiple studies must be aggregated to derive more reliable conclusions and within this paradigm, research synthesis methods have blossomed [@shadish2015meta; @nakagawa2019research].
+<!--For many, highly regarded published studies however, results could not be replicated [@brembs2018prestigious].-->
+<!--A lack of validating replication research partly strengthened the belief that single studies results should solely be viewed as part of many studies studying the same research question [@asendorpf2016recommendations]. -->
+<!--Evidence over multiple studies must be aggregated to derive more reliable conclusions and within this paradigm, research synthesis methods have blossomed [@shadish2015meta; @nakagawa2019research].-->
+In step with this interest in replication research,
+research synthesis methods have blossomed [REF].
+These methods aggregate the findings of multiple studies,
+and thus enable drawing overarching conclusions across multiple studies.
 The present paper focuses on quantitative methods for research synthesis [e.g., @vanlissaSelectRelevantModerators2021], although qualitative [e.g., @vanlissaMappingPhenomenaRelevant2021] research synthesis methods also exist. 
 
-The most common of the quantitative methods is the meta-analysis in which results over different studies are aggregated to conclude one overarching effect [@borensteinIntroductionMetaAnalysis2009].
-A key-challenge in meta-analysis is dealing with between-study heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009]. 
-Whether replications are conceptual or exact in nature, differences in outcomes can be due to the research question being examined in different laboratories, using idiosyncratic methods or sampling from distinct populations. 
-Such differences due to virtue of not being the exact same study lead to variability in the outcome that can both be attributed to random and systematic measurement error.  
-
+A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009].
+Heterogeneity appears when, for example, studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
+The most common quantitative research synthesis method is meta-analysis,
+in which results of different studies are aggregated to estimate an aggregate effect size [@borensteinIntroductionMetaAnalysis2009].
 In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissaSmallSampleMetaanalyses2020].
 First, if studies are exact replications, one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
 Second, when heterogeneity between studies can be assumed to be because of random measurement error, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
-Third, when there are a few systematic differences between studies, meta-regression can be performed in which the variables that cause systematic differences in outcomes are controlled for. 
+Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
 And finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
+Each of these approaches requires making different assumptions about the nature of heterogeneity.
 
-Although each approach has its own specific assumptions, they all are regarding the nature of heterogeneity. 
 An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
-Instead of aggregating parameter estimates of an effect over studies, which, due to heterogeneity, is not a straightforward endeavour, BES focuses on the aggregation of evidence in favor of an informative hypothesis $H_i$ across studies. The evidence in favor of $H_i$ is relative to some alternative hypothesis $H_a$.
-The only assumptions BES has is that all study-specific hypotheses aim to provide evidence for the same underlying theoretical relationship, although the direction of effect, if any, is arbitrary.
-The amount of evidence for this $H_i$ against an $H_a$ in each study and over all studies is expressed as a Bayes factor (BF). 
-A Bayes factor can be interpreted as the ratio of evidence in favor of $H_i$ divided by evidence in favor of $H_a$. 
-Thus, $BF_{ia}$ = 10 means that the data provide ten times more support in favor of $H_i$ than $H_a$. 
-The BFs in each study are synthesized to one value by taking their product. 
-This value is known as the Product Bayes Factor (PBF) and it summarizes the total evidence for the hypothesis against an alternative. 
-<!--BES thus requires its users to formulate an informative hypothesis about a theoretical relationship and evaluate it using the data in studies that examined that relationship -->. 
-In summary, BES is a three stage method where first both an $H_i$ and $H_a$ are formulated, second a $BF_{ia}$ is calculated in each study under consideration and, finally the product of all $BF_{ia}$'s is taken to obtain the PBF reflecting the overall support for $H_i$ over $H_a$. 
-Do note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
+Instead of aggregating effect sizes, BES aggregates the evidence in favor of an informative hypothesis $H_i$ across studies.
+The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
+A Bayes factor can be interpreed as the ratio of evidence in favor of $H_i$ divided by evidence against it.
+Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
+These Bayes factors can be synthesized across studies by taking their product.
+The resulting product Bayes factor (PBF) summarizes the total evidence for the hypothesis.
+Note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
+The only assumption of BES is that all study-specific hypotheses provide evidence about the same underlying theoretical relationship.
 
-What also should be kept in mind is that meta-analysis and BES do answer different research questions.
-Meta-analysis evaluates a certain theoretical relationship between variables. 
-It pools parameter estimates that evaluate this relationship over multiple studies to obtain a combined effect. 
-BES on the other hand compares a specific $H_i$ against some $H_a$.
-Aggregating support for this $H_i$ against $H_a$ over studies shows how robust the evaluation is against heterogeneity.
-The different answer from both methods thus make for complementary information. Meta-analysis provides support for or against a theoretical relationship in general, where BES provides support for a hypothesis about this theoretical relationship against some alternative.
-Whether only one of the methods or both should be used depends on the goal of the evidence synthesis.
+Although meta-analysis and BES are both research synthesis methods, they answer different research questions.
+Meta-analysis estimates the value or distribution of a population effect size. 
+It pools estimates of this effect size across multiple studies to obtain an overall estimate of the effect size.
+It thus answers the question: Givern certain assumptions about between-studies heterogeneity, what is the average population effect size?
+BES, on the other hand, aggregates evidence in favor of an informative hypothesis across multiple studies.
+It thus answers the question: Do all these studies support the informative hypothesis?
+Both methods thus provide complementary information.
 
 This tutorial paper introduces the first implementation of BES in user-friendly open source software.
 A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `r as.character(packageVersion("bain"))`.
@@ -115,24 +116,21 @@ and illustrates several use cases through reproducible examples.
 
 # Simulation study
 
-The present simulation study set out to validate the PBF algorithm. 
-108 different plausible simulation conditions were specified, where each condition was repeated 1000 times, each time with different simulated data.
-For each of the 108 x 1000 iterations of the simulation, we simulated a correlation coefficient, $\rho$, in multiple groups representing different studies examining a theoretical relationship.
-$\rho$ was either equal to or .1 units larger than an informative hypothesis value.
-This informative hypothesis was kept constant over all iterations, and was specified as $H_i: \rho > .1$.
-For every group in the iteration, the $H_i$ was tested against its complementary hypothesis: $H_c: \rho \leq .1$. 
-This allowed the calculation of the $BF_{ic}$ for all groups.
-The product was taken of the $BF_{ic}$ over all groups to compute the PBF and determine the amount of evidence in favor of $H_i$ over $H_c$ across the multiple groups
+The present simulation study set out to validate the PBF algorithm.
+For each iteration of the simulation, we simulated a correlation coefficient in multiple samples.
+The informative hypothesis was kept constant at $H_i: \rho > .1$.
+All simulation conditions were evaluated once in the presence of a true population effect,
+defined as $\rho = .2$,
+and once in the presence of a null effect, defined as $\rho = .1$.
 A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported.
-As a benchmark for comparing the PBF, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent studies.
-Among these were two other Bayesian aggregation methods:
-the gPBF, which takes the geometric mean of the $BF_{ic}$ over all groups, defined as $\sqrt[k]{PBF}$,
-and the Together Bayes Factor (TBF), defined as <!-- *formula for the TBF* -->
-Other algorithms included a naive "vote count" algorithm, which used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of groups, i.e.: $H_0: \rho = .1$.
+As a benchmark for comparison, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
+The first was a "vote count" algorithm,
+which is common but not considered to be good practice [REF].
+This approach used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$.
 The second was a random-effects meta-analysis (RMA), which is the standard in the field.
 For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
 Third was an individual participant data (IPD) meta-analysis.
-Like classic meta-analysis, IPD is a multilevel model, clustered by group.
+Like classic meta-analysis, IPD is a multilevel model, clustered by sample.
 In contrast to classic meta-analysis, however, IPD freely estimates variance at the first level, because raw data are available.
 The PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
 It is thus informative to compare the PBF to both these methods.
@@ -143,6 +141,7 @@ IPD was also evaluated using a 90% confidence interval for the overall effect si
 For each algorithm, a confusion matrix was obtained by tabulating inferential decisions made using the criteria described above against the population status of the hypothesis (true or false).
 This matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
 These quantities were summarized as sensitivity, $1-\frac{FN}{TP + FN}$, the probability of concluding the hypothesis is false given that it was truly false in the population, <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
+<!--CJ: This is all the same, see https://en.wikipedia.org/wiki/Sensitivity_and_specificity -->
 and specificity, $1-\frac{FP}{FP + TN}$, the probability of concluding the hypothesis is true given that it was also true in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
 The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive/true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
 
@@ -201,6 +200,7 @@ knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of ea
 ```
 PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
 <!-- should we also test for interaction effects? I seem to remember that there were some interesting effects of errorsd*k and n*k -->
+<!-- CJ: I don't think so, that might be more relevant for one of the papers that focused on the simulation study. For this tutorial, a simpler sim is fine. -->
 
 ### Effect of sample size
 
