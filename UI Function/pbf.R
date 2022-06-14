@@ -48,19 +48,19 @@ bains <- lapply(ttests,bain, hypothesis = "x=y")
 pbf(bains)
 
 
-# Evaluation of informative hypotheses for an ANOVA
-# make a factor of variable site
 sesamesim$site <- as.factor(sesamesim$site)
-# execute an analysis of variance using lm() which, due to the -1, returns
-# estimates of the means of postnumb per group
-anov <- lm(postnumb~site-1,sesamesim[1:75,])
-# take a look at the estimated means and their names
-coef(anov)
-# set a seed value
-set.seed(100)
-# use the names to formulate and test hypotheses with bain
-results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
 
+anov <- lm(postnumb~site-1,sesamesim[1:75,])
+results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
+anov <- lm(postnumb~site-1,sesamesim[76:150,])
+results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2>site5>site1>site3>site4")
+anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
+results3 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3=site4>site5; site2>site5>site1>site3>site4")
+
+pbf(list(results, results2, results3))
+
+anov <- lm(postnumb~site-1,sesamesim[1:75,])
+results <- bain(anov, "site2=site1>site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
 anov <- lm(postnumb~site-1,sesamesim[76:150,])
 results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2>site5>site1>site3>site4")
 anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
