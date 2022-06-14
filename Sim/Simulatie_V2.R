@@ -3,8 +3,8 @@ rm(list=ls(all.names = T))
 cat("\014")
 
 # Delete folder where previous results are in and create new 'Results' folder
-# unlink("./sim/Results", recursive = T)
-# dir.create("./sim/Results")
+unlink("results", recursive = T)
+dir.create("results")
 
 #load necessary packages
 dependencies <- c('MASS', 'bain', 'metafor', 'lme4', 'mvtnorm')
@@ -22,7 +22,7 @@ if(!all(versions == 0)) stop("Using the incorrect version of one or more package
 # set conditions for simulation
 hyper_parameters<-list(
   ndataset = 1:1000,            # number of replications per condition
-  es = c(0, 0.1, .2),        # true effect size = true correlation with outcome
+  es = c(0.1, .2),        # true effect size = true correlation with outcome
   errorsd = c(0.81, .5, 0),   # corresponds to reliability of .6, .8, and 1
   n = c(20, 80, 200, 500),             # mean sample size per group
   k = c(2, 3, 10),               # number of groups
@@ -63,7 +63,7 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
   df_join <- data.frame(cbind(df_join, rep(1:k, each = n)))
   res_ipd <- lmer(formula = X1 ~ X2 + (1|X3),
                              data    = df_join) #to run the model
-  ci_ipd <- confint(res_ipd)
+  ci_ipd <- confint(res_ipd, level = .90)
   
   # obtain estimates for correlations and their standard errors for every dataset
   res <- sapply(dfs, function(x){
@@ -74,12 +74,12 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
   
   df_meta <- data.frame(t(res))
   
-  res_met <- rma(yi = df_meta[,1], sei = df_meta[,2])
+  res_met <- rma(yi = df_meta[,1], sei = df_meta[,2], level = 90)
 
   # Classic approach
-  classic_allsig <- all(apply(res, 2, function(x){
+  classic_votecount <- round(mean(apply(res, 2, function(x){
     (x[1]-hyp_val)/x[2] > 1.644854
-  }))
+  })))
   
   # necessary naming for bain and further preparing
   colnames(res) <- paste0('r', 1:k)
@@ -113,13 +113,15 @@ tab <- foreach(rownum = 1:nrow(summarydata), .options.snow = opts, .packages = c
                       Sigma = diag(res[2,]^2, ncol = ncol(res))) # assume independence between groups, square standard errors
   
   # returns in order: gpbf_ic, gpbf_iu, prodbf_ic, prodbf_iu, tbf_ic, tbf_iu
-  c(rownum,
+  fits <- c(rownum,
     c(0,10)[(ci_ipd[4,1] > hyp_val) +1], #return 10 if IPD is significantly greater than hyp, 0 if false
     c(0,10)[(res_met$ci.lb > hyp_val) +1], #return 10 if RMA is significantly greater than hyp, 0 if false
-    c(0,10)[classic_allsig+1], #return 10 if classic_allsig = T, 0 if false
+    c(0,10)[classic_votecount+1], #return 10 if classic_votecount = T, 0 if false
     gp_and_prod[1,],
     gp_and_prod[2,], 
     c(bf_together$fit$BF.c[1], bf_together$fit$BF.u[1]))
+  write.table(x = t(fits), file = sprintf("results/results_%d.txt" , Sys.getpid()), sep = "\t", append = TRUE, row.names = FALSE, col.names = FALSE)
+  NULL
 }
 
 #Close cluster
@@ -132,21 +134,27 @@ stop("End of simulation")
 # Merge files -------------------------------------------------------------
 library(data.table)
 
-# algorithms (geometric product Bayes Factor, product Bayes Factor, together Bayes Factor)
-algorithms <- c("gpbf", "prodbf", "tbf")
-hyps <- c("_ic", "_iu")  # using both complementary and unconstrained
-alg_names <- c("ipd", "rma", "allsig", paste0(rep(algorithms, each = length(hyps)), hyps))
-
 # read in the simulation conditions 
 res <- readRDS("./sim/summarydata.RData")
 setDT(res)
+
+f <- list.files("results/", full.names = TRUE)
+
+tab <- rbindlist(lapply(f, fread))
+setorderv(tab, cols = "V1", order=1L, na.last=FALSE)
+
+# algorithms (geometric product Bayes Factor, product Bayes Factor, together Bayes Factor)
+algorithms <- c("gpbf", "prodbf", "tbf")
+hyps <- c("_ic", "_iu")  # using both complementary and unconstrained
+alg_names <- c("ipd", "rma", "votecount", paste0(rep(algorithms, each = length(hyps)), hyps))
+
 conditions <- colnames(res)
 
 # make sure results are same length as conditions
-if(!(tab[1,1] == 1 & tab[nrow(tab), 1] == nrow(res) & length(unique(tab[,1])) == nrow(res))){
+if(!(tab[1,1] == 1 & tab[nrow(tab), 1] == nrow(res) & length(unique(tab$V1)) == nrow(res))){
   stop("Results not the same length as number of simulation iterations")
 }
-tab <- as.data.table(tab)
+
 # give appropriate names to the simulation results and omit identification variable 'V1'
 names(tab) <- c("V1", alg_names)
 tab[, "V1" := NULL]
@@ -158,8 +166,6 @@ rm(tab)
 # write results to .RData and .csv extension and delete .txt files in the results folder.
 fwrite(res, file.path("sim", paste0("sim_results_", Sys.Date(), ".csv")))
 saveRDS(res, file.path("sim", paste0("sim_results_", Sys.Date(), ".RData")))
-f <- list.files("./sim/Results", full.names = TRUE)
-file.remove(f)
 
 # END OF FILE
 tabres <- res[, lapply(.SD, function(x){mean(x > 3)}), .SDcols = alg_names, by = c("es", "errorsd", "n", "k")]

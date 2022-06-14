@@ -39,7 +39,7 @@ abstract: |
 keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
 wordcount         : "5356"
 
-bibliography      : ["references.bib"]
+bibliography      : ["product_bayes.bib"]
 
 floatsintext      : no
 figurelist        : no
@@ -61,6 +61,7 @@ library("papaja")
 library(tidySEM)
 library(kableExtra)
 r_refs("r-references.bib")
+out <- readRDS("out.RData")
 ```
 
 ```{r analysis-preferences}
@@ -149,8 +150,7 @@ The overall performance was captured by the accuracy, which represents the total
 
 To examine performance in a range of realistic scenarios,
 several design factors were manipulated:
-The population effect size $\rho \in (-0.1, 0, 0.1, 0.2)$,
-the sample size per group $n \in (20, 80, 200, 500)$,
+The sample size per group $n \in (20, 80, 200, 500)$,
 the number of groups $k \in (2, 3, 10)$, where 2 is the minimum number of groups and 10 is a very large number of groups,
 and the reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is assumed when analyzing correlations between observed items or scale scores.
 The design factors combined to produce `r out$conditions` unique conditions.
@@ -160,7 +160,7 @@ For all simulation conditions, 1000 data sets were generated.
 library(data.table) # load in libraries
 library(DT)
 library(ggplot2)
-rename <- c("prodbf" = "PBF", "gpbf" = "gPBF", "tbf" = "TBF", "ipd" = "IPD", "rma" = "RMA", "allsig" = "VC")
+# rename <- c("prodbf" = "PBF", "gpbf" = "gPBF", "tbf" = "TBF", "ipd" = "IPD", "rma" = "RMA", "allsig" = "VC")
 
 ```
 
@@ -172,7 +172,7 @@ names(tab)[1] <- "Metric"
 tab$Metric <- gsub("^.+_", "", tab$Metric)
 tab <- tab[!tab$Metric == "lr", !grepl("iu", names(tab))]
 names(tab) <- gsub("_ic", "", names(tab))
-names(tab)[match(names(rename), names(tab))] <- rename
+# names(tab)[match(names(rename), names(tab))] <- rename
 tab <- tab[tab$Metric %in% c("sensitivity", "specificity", "accuracy"),]
 rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
@@ -189,13 +189,11 @@ As the PBF vastly outperformed other BFs, these were omitted from further analys
 ## Effect of simulation conditions
 
 We examined the effect of simulation conditions on overall accuracy.
-
 ```{r tabeffect, echo = FALSE}
 tab <- read.csv("effect_of_conditions.csv", stringsAsFactors = FALSE)
 tab <- tab[, !grepl("(gpbf|tbf)", names(tab))]
-tab <- tab[, c("condition", "prodbf_ic", "rma", "ipd", "allsig", "prodbf_ic.vs..rma", "ipd.vs..prodbf_ic", "allsig.vs..prodbf_ic")]
-names(tab) <-  c("Factor", "PBF", "RMA", "IPD", "VC", "vs RMA", "vs IPD", "vs VC")
-
+tab <- tab[, grepl("^\\w+$", names(tab)) | (grepl("\\.{2}", names(tab)) & grepl("PBF", names(tab)))]
+names(tab)[grepl("\\.{2}", names(tab))] <- paste0("vs ", gsub("(\\.|PBF|vs)", "", names(tab)[grepl("\\.{2}", names(tab))]))
 knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
 ```
 PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
@@ -206,11 +204,13 @@ PBF performance was most impacted by sample size $n$, followed by the number of 
 
 ```{r fign, fig.cap="Mean performance by sample size"}
 res <- readRDS("confusion_by_cond.RData")
-res <- res[res$alg %in% c("ipd", "rma", "allsig", "prodbf_ic"), ]
 
 df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
              variable.name = "Outcome", value.name = "val")
-df_plot <- df_plot[ ,list(mean=mean(val)), by=c("n", "Outcome", "alg")]
+df_plot <- as.data.frame(df_plot)
+df_plot <- aggregate(df_plot$val, df_plot[c("n", "Outcome", "alg")], FUN=mean)
+names(df_plot)[ncol(df_plot)] <- "mean"
+# df_plot <- df_plot[ ,list(mean=mean(val)), by=c("n", "Outcome", "alg")]
 ggplot(df_plot, aes(x = n, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
@@ -225,9 +225,12 @@ This difference explains the effect of reliability on the diference between algo
 ### Effect of number of groups
 
 ```{r, fig.cap="Mean performance by number of groups"}
-df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
+df_plot <- data.table::melt(res, measure.vars = c("sensitivity", "specificity"),
              variable.name = "Outcome", value.name = "val")
-df_plot <- df_plot[ ,list(mean=mean(val)), by=c("k", "Outcome", "alg")]
+# df_plot <- df_plot[ ,list(mean=mean(val)), by=c("k", "Outcome", "alg")]
+df_plot <- as.data.frame(df_plot)
+df_plot <- aggregate(df_plot$val, df_plot[c("k", "Outcome", "alg")], FUN=mean)
+names(df_plot)[ncol(df_plot)] <- "mean"
 ggplot(df_plot, aes(x = k, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
@@ -244,32 +247,13 @@ this is because the probability of obtaining any false negatives increases with 
 ### Effect of reliability
 
 ```{r, fig.cap="Mean performance by reliability"}
-
-# dat <- readRDS(file.path("Sim", "sim_results_2022-05-07.RData"))
-# varsout <- c("ipd", "rma", "allsig", "prodbf_ic")
-# varspred <- c("errorsd", "n", "k", "hyp_val")
-# 
-# df_plot <- dat[!es < .1,  lapply(.SD, function(var) {
-#   as.vector(table(ordered(es > .1, levels = c("FALSE", "TRUE")), ordered(var > 3, levels = c("FALSE", "TRUE"))))
-# }), .SDcols = varsout, by = "errorsd"]
-# 
-# tabres[, metric := rep(c("TN", "FN", "FP", "TP"), nrow(tabres)/4)]
-# 
-# tabres <- melt(tabres, measure.vars = varsout,
-#              variable.name = "alg", value.name = "val")
-# tabres <- dcast(tabres, errorsd + n + k + hyp_val + alg ~ metric, value.var = "val")
-# tabres[, alpha := FP / (FP + TN)]
-# tabres[, beta := FN / (TP + FN)]
-# tabres[, sensitivity := 1-beta]
-# tabres[, specificity := 1-alpha]
-# tabres[, accuracy := (TP + TN) / (TP+TN+FP+FN)]
-
-
-
 df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
              variable.name = "Outcome", value.name = "val")
-df_plot <- df_plot[ ,list(mean=mean(val)), by=c("errorsd", "Outcome", "alg")]
-ggplot(df_plot, aes(x = errorsd, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+# df_plot <- df_plot[ ,list(mean=mean(val)), by=c("reliability", "Outcome", "alg")]
+df_plot <- as.data.frame(df_plot)
+df_plot <- aggregate(df_plot$val, df_plot[c("reliability", "Outcome", "alg")], FUN=mean)
+names(df_plot)[ncol(df_plot)] <- "mean"
+ggplot(df_plot, aes(x = reliability, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
   theme_bw() +
@@ -324,3 +308,17 @@ With increasing reliability, increasing specificity was traded off for decreasin
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
+
+
+
+
+
+
+
+
+
+
+
+
