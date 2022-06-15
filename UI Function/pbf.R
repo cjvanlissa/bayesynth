@@ -30,7 +30,14 @@ pbf <- function(x, ...){
       # Else, go back to step 1, but now merge merged with list item 3
     }
   }
-  BFs <- do.call(cbind, lapply(x, function(y){y$fit$BF.c[which(y$hypotheses %in% hyps)]}))
+  
+  BFs <- do.call(cbind, lapply(x, function(y){
+    hyps_in <- which(y$hypotheses %in% hyps)           # find which hypotheses exist in y
+    hyps_indices <- match(hyps[hyps_in], y$hypotheses) # find index of those hypotheses
+    y$fit$BF.c[hyps_indices]                           # get hypotheses in correct order
+  }))
+  rownames(BFs) <- paste0(sprintf('H%d: ', 1:length(hyps)),hyps) # give names
+  
   res <- list(BFs = BFs, pbf = apply(BFs, 1, prod)) # obtain pbf ic, might need to change dependent on alternative hyp
   return(res)
 }
