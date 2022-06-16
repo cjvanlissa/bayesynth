@@ -293,9 +293,59 @@ With increasing reliability, increasing specificity was traded off for decreasin
 
 
 
-# Results
+# Tutorial
+This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `r R.Version()$version.string`, Rstudio version `r RStudio.Version()$version` and package `bain` version `r packageVersion('bain')`. This tutorial focusses on synthesizing evidence for an informative hypotheses using the Product Bayes Factor (pbf). To illustrate the method, the `sesamesim` dataset will be used which is part of `bain`. For a detailed description of the dataset, run `?bain::sesamesim`. 
 
-# Discussion
+<!-- skeleton
+1.) explain calculation of single BF and what it means, refer to previous tutorial on the bayes factor
+2.) introduce the case where there are multiple studies and we want to evaluate a single hypothesis
+3.) introduce pbf(), its uses, outputs and interpretation
+-->
+
+### The Bayes Factor using bain.
+In conventional Null-hypothesis significance testing (NHST), as the name implies, data is analysed to generate evidence for or against the null-hypothesis. This method can only evaluate a single hypothesis, the null-hypothesis, and its output is dichotomous in nature: whether a theoretical relationship is probable or improbable to exist. However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much. In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis. Because the focus of this tutorial is on BES, this tutorial will only briefly introduce how to evaluate an hypothesis using the R package `bain` and interpret its output.  For an extensive tutorial on how to evaluate informative hypotheses using `bain` see [@hoijtink2019tutorial].
+
+Let's say we are interested in whether the status of the site children grew up in (`site`) affects their score on a numbers test after watching Sesame Street for a year (`postnumb`). `postnumb` is a continuous variable which ranges from 0-63. `site` is a nominal variable indicating group membership with possible values 1 = disadvantaged inner city, 2 = advantaged suburban, 3 = advantaged rural, 4 = disadvantaged rural and 5 = disadvantaged Spanish speaking. In NHST we specify the following null-hypothesis:
+
+$H_0: \mu_{site1} =\mu_{site2} = \mu_{site3} = \mu_{site4} =\mu_{site5}$
+
+However, we may expect that the children growing up in an advantaged site will have a higher score than children growing up in a disdvantaged site. Our informative hypothesis is:
+
+$H_A: \mu_{site2},\mu_{site3} > \mu_{site1},\mu_{site4},\mu_{site5}$
+
+We can test the $H_0$ and $H_A$ simultaneously by running a linear regression on the data and passing the `lm` object with the specific hypotheses to bain.
+```{r}
+# load bain package
+library(bain)
+
+# convert `site` to nominal variable
+sesamesim$site <- as.factor(sesamesim$site)
+
+# specify model, allow meaningful zero-point
+fit <- lm(postnumb ~ site-1, data = sesamesim)
+
+fit_bain <- bain(fit, hypothesis = "site1=site2=site3=site4=site5; site2&site3>site1&site4&site5" )
+print(fit_bain)
+
+
+```
+<!-- Both BF.c and BF.u are close to zero, the probability of the HA being more probable than the Hc or Hu is small. <further interpretation>-->
+
+### Single vs multiple studies.
+In the case of multiple studies, it is possible to evaluate the hypotheses under consideration by synthesizing the evidence over all studies. In the example we split the `sesamesim` dataset up into three equal parts, to simulate three studies into the same subject.
+In this example, each result has the $H_0$ and $H_A$ in common, but contains one result-specific hypothesis. The `pbf()` function only gives output for the hypotheses that are present in all results.
+```{r}
+anov <- lm(postnumb~site-1,sesamesim[1:75,])
+results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2&site3>site1&site4&site5")
+anov2 <- lm(postnumb~site-1,sesamesim[76:150,])
+results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2&site3>site1&site4&site5")
+anov3 <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
+results3 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3=site4>site5; site2&site3>site1&site4&site5")
+
+pbf(list(results, results2, results3))
+
+```
+The function returns the individual BF.c's of each study, as well as their product.
 
 
 \newpage
