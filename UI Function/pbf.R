@@ -30,10 +30,13 @@ pbf <- function(x, ...){
       # Else, go back to step 1, but now merge merged with list item 3
     }
   }
-  BFs <- do.call(cbind, lapply(x, function(y){y$fit$BF.c[which(y$hypotheses %in% hyps)]}))
+  BFs <- do.call(cbind, lapply(x, function(y){y$fit$BF.c[match(hyps, y$hypotheses)]}))
+  rownames(BFs) <- paste0(sprintf('H%d: ', 1:length(hyps)),hyps) # give names
+  
   res <- list(BFs = BFs, pbf = apply(BFs, 1, prod)) # obtain pbf ic, might need to change dependent on alternative hyp
   return(res)
 }
+
 
 # try out with non-bain objects
 ttests <- lapply(1:4, function(i){
