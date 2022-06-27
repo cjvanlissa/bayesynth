@@ -31,9 +31,10 @@ pbf <- function(x, ...){
     }
   }
   BFs <- do.call(cbind, lapply(x, function(y){y$fit$BF.c[match(hyps, y$hypotheses)]}))
-  rownames(BFs) <- paste0(sprintf('H%d: ', 1:length(hyps)),hyps) # give names
-  
-  res <- list(BFs = BFs, pbf = apply(BFs, 1, prod)) # obtain pbf ic, might need to change dependent on alternative hyp
+  colnames(BFs) <- paste0("Sample ", 1:ncol(BFs))
+  res <- data.frame(PBF = apply(BFs, 1, prod), BFs)# obtain pbf ic, might need to change dependent on alternative hyp
+  rownames(res) <- paste0(sprintf('H%d: ', 1:length(hyps)),hyps) # give names
+  class(res) <- c("pbf", class(res))
   return(res)
 }
 
