@@ -16,6 +16,7 @@ pbf <- function(x, ...){
     cl[[1L]] <- quote(pbf)
     eval.parent(cl)
   }
+
   # Merge the hypotheses from list item 1 and 2 into object merged
   if(length(x) > 1){
     hyps <- x[[1]]$hypotheses
@@ -37,54 +38,3 @@ pbf <- function(x, ...){
   class(res) <- c("pbf", class(res))
   return(res)
 }
-
-library(testthat)
-# try out with non-bain objects
-set.seed(100)
-ttests <- lapply(1:4, function(i){
-  tt = as.data.frame(cbind(y = rnorm(1000,0,1), x = rnorm(1000, 0.2,1)))
-  t_test(tt$y, tt$x)
-})
-test_that("pbf works for t_tests", {
-  expect_error({pbf(ttests, "x=y")}, NA)
-  res <- pbf(ttests, "x=y")
-  expect_equivalent(res[1,1], 1.644e-14)
-})
-
-# and with bain-objects
-# CJ: This does not require specifying a hypothesis in pbf() call
-bains <- lapply(ttests,bain, hypothesis = "x=y")
-pbf(bains)
-
-
-sesamesim$site <- as.factor(sesamesim$site)
-
-anov <- lm(postnumb~site-1,sesamesim[1:75,])
-results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[76:150,])
-results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
-results3 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3=site4>site5; site2>site5>site1>site3>site4")
-
-res_base <- pbf(list(results, results2, results3))
-
-anov <- lm(postnumb~site-1,sesamesim[1:75,])
-results <- bain(anov, "site2=site1>site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[76:150,])
-results2 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3>site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
-results3 <- bain(anov, "site2=site1=site3=site4=site5; site2=site1=site3=site4>site5; site2>site5>site1>site3>site4")
-
-pbf(list(results, results2, results3))
-
-anov <- lm(postnumb~site-1,sesamesim[1:75,])
-results <- bain(anov, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[76:150,])
-results2 <- bain(anov, "site2=site1=site3>site4=site5; site2=site1=site3=site4=site5; site2>site5>site1>site3>site4")
-anov <- lm(postnumb~site-1,sesamesim[151:nrow(sesamesim),])
-results3 <- bain(anov, "site2=site1=site3=site4>site5; site2>site5>site1>site3>site4; site2=site1=site3=site4=site5")
-
-res_changeorder <- pbf(list(results, results2, results3))
-
-res_base
-res_changeorder
