@@ -305,7 +305,7 @@ This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `
 ### The Bayes Factor using bain.
 In conventional Null-hypothesis significance testing (NHST), as the name implies, data is analysed to generate evidence for or against the null-hypothesis. This method can only evaluate a single hypothesis, the null-hypothesis, and its output is dichotomous in nature: whether a theoretical relationship is probable or improbable to exist given the data. However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much. In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis. Because the focus of this tutorial is on BES, this tutorial will only briefly introduce how to evaluate an hypothesis using the R package `bain` and interpret its output. For an extensive tutorial on how to evaluate informative hypotheses using `bain` see [@hoijtink2019tutorial].
 
-Let's say we are interested in whether the status of the site children grew up in (`site`) affects their score on a numbers test after watching Sesame Street for a year (`postnumb`). `postnumb` is a continuous variable which ranges from 0-63. `site` is a nominal variable indicating group membership with possible values 1 = disadvantaged inner city, 2 = advantaged suburban, 3 = advantaged rural, 4 = disadvantaged rural and 5 = disadvantaged Spanish speaking. In NHST we specify the null-hypothesis that the mean `postnumb` is equal for all groups in  `site`:
+Let's say we are interested in whether the status of the site children grew up in (`site`) affects their score on a numbers test after watching Sesame Street for a year (`postnumb`). `postnumb` is a continuous variable which ranges from 0-63. `site` is a nominal variable indicating group membership with possible values 1 = disadvantaged inner city, 2 = advantaged suburban, 3 = advantaged rural, 4 = disadvantaged rural and 5 = disadvantaged Spanish speaking. In NHST we specify the null-hypothesis that the mean `postnumb` is equal for all groups in  site`:
 
 $H_0: \mu_{site1} =\mu_{site2} = \mu_{site3} = \mu_{site4} =\mu_{site5}$
 
@@ -326,6 +326,7 @@ fit <- lm(postnumb ~ site-1, data = sesamesim)
 
 #specify Hypotheses to evaluate
 hypotheses <- "site2=site1=site3=site4=site5; site2&site3>site1&site4&site5"
+hypotheses <- "site2=site1=site3=site4=site5"
 
 fit_bain <- bain(fit, hypothesis = hypotheses)
 print(fit_bain)
@@ -356,10 +357,16 @@ lm_allsamples <- list(lm_sample1, lm_sample2, lm_sample3)
 pbf(lm_allsamples, hypotheses)
 ```
 
-The function returns a `data.frame` containing the passed hypotheses in the rows and in the columns the PBF and the individual Bayes Factor for each sample individually. The `PBF` of both hypotheses is close to zero, meaning that the combined evidence for both hypotheses over all studies is low. When looking at the individual Bayes Factors, we also see that the PBF is lower than all of the Bayes Factors individually. For sample 3 the specified hypotheses are even more likely than their complement. This example illustrates another strength of the PBF; being able to evaluate a hypothesis more extremely than the most extreme individual evaluation. If all samples do not support a hypothesis, than the number of times the hypothesis is not supported should be included in its evaluation. This leads to a more extreme combined evaluation than any individual evaluation. Likewise, if there is very strong support in only a small minority of the samples, while the majority of samples shows no support at all, than it is likely that the hypothesis is not true and PBF should be reflective of this.
+The function returns a `data.frame` containing the passed hypotheses in the rows and in the columns the PBF and the individual Bayes Factor for each sample individually. The `PBF` of both hypotheses is close to zero, meaning that the combined evidence for both hypotheses over all studies is low. When looking at the individual Bayes Factors, we also see that the PBF is lower than all of the Bayes Factors individually. For sample 3 the specified hypotheses are even more likely than their complement. This example illustrates another strength of the PBF; being able to evaluate a hypothesis more extremely than the most extreme individual evaluation. If all samples do not support a hypothesis, than the number of times the hypothesis is not supported should be included in its evaluation. This leads to a more extreme combined evaluation than any individual evaluation. Likewise, if there is very strong support in only a small minority of the samples, while the majority of samples shows no support at all, than it is likely that the hypothesis is not true.
 
 ### using bain objects
-The `pbf()` function also works when objects are first converted to `bain` objects. In this specific example, each `bain` object corresponding to one of the three samples has the $H_0$ and $H_A$ in common, but contains one sample-specific hypothesis. The `pbf()` function only returns output for the hypotheses that are present in all results. When `bain` objects are passed to the `pbf()`, no additional hypotheses need to be passed to `pbf()` as they are already saved in the `bain` objects.
+
+The `pbf()` function also accepts multiple `bain` objects.
+This makes it possible to, for example, evaluate different sets of hypotheses for multiple data sets before using the resulting `bain` objects to aggregate the evidence for all hypotheses those datasets share in common.
+The example below illustrates this princuple.
+Each analysis has two hypotheses in common, but also contains one sample-specific hypothesis.
+The `pbf()` function is called on the resulting `bain` object and returns output for the two common hypotheses.
+Note that, in this case, `pbf()` does not require an argument `hypotheses`, as the hypotheses are contained in the `bain` objects.
 
 ```{r}
 bain_sample1 <- bain(lm_sample1, "site2=site1=site3=site4=site5; site2>site1=site3=site4=site5; site2&site3>site1&site4&site5")
@@ -373,14 +380,13 @@ pbf(bain_allsamples)
 ```
 
 As can be seen, the results are identical to the results in the previous example. This means that the sample-specific hypotheses have been left out and only the hypotheses that each sample has in common are retained.
+When there are no common hypotheses, `pbf()` throws an error.
 
-
-When there is no hypothesis that is shared by each sample, `pbf()` throws an error.
-```{r}
+```{r, echo = FALSE, eval = FALSE}
 bains_different_hyps <- list(
   bain(lm_sample1, "site2=site1=site3=site4=site5"),
   bain(lm_sample2, "site2=site1=site3>site4=site5"),
-  bain(lm_sample3, "site2&site3<site1&site4&site5")
+  bain(lm_sample3, "site2&site3>site1&site4&site5")
 )
 
 tryCatch({
@@ -389,21 +395,24 @@ tryCatch({
       )
 
 ```
-The function returns an error stating that the samples have no hypothesis in common and thus the PBF cannot be calculated.
+<!--The function returns an error stating that the samples have no hypothesis in common and thus the PBF cannot be calculated.-->
 
-### using named vectors
-Another specific use-case is when the raw data from different samples is not available. In this case, the researcher only has access to the parameter-values that are provided in the research papers. Because the `pbf()` function inherently converts objects to `bain` objects, each sample requires three pieces of information in order to be usable: the named parameter estimates, a covariance matrix of their standard errors and the sample size. First these values are extracted from all samples. A function is created that extracts this information which is then used to extract the necessary information from all samples.
+### Using sufficient statistics
 
-```{r}
+A third use-case occurs when the raw data from different samples is not available.
+This may happen, for example, when aggregating findings from the published literature (similar to meta-analysis).
+In this case, one can use the default interface of `bain`, as explained in [REFERENCE BAIN PAPER Hoijtink, Mulder, van Lissa, & Gu, (2019) <doi:10.31234/osf.io/v3shc>].
+This function requires four arguments: A named vector of parameter estimates, their asymptotic covariance matrix, the original sample size, and the number of within-group and between-group parameters.
+These arguments may be derived in different ways for distinct samples.
+The example below illustrates how to aggregate evidence in favor of one hypotheses across three studies that each used different methods.
+<!-- CJ: What I'd like to do here is show how to aggregate a t-test, a regression coefficient and a correlation coefficient -->
+
+```{r, eval = FALSE, echo = FALSE}
 get_estimates <- function(sample){
-  
-  # number of groups in the 'site' variable
   number_sites <- length(levels(sesamesim$site))
   
-  # sample size of each sample
   sample_size <- nrow(sample)
   
-  # obtains mean and standard deviation of postnumb for each group
   site_estimates <- sapply(1:number_sites, function(i){
     rbind(
       mean(sample[sample['site'] == i, "postnumb"]),
@@ -411,15 +420,12 @@ get_estimates <- function(sample){
       )
     })
   
-  # get the estimates of the mean postnumb for each group and give them appropriate names
   est_names <- sprintf("site%d", 1:number_sites)
   site_means <- site_estimates[1,]
   names(site_means) <- est_names
   
-  # obtain covariance matrix of the estimates, samples are assumed to be independent.
   covmat <- diag((site_estimates[2,] / sqrt(sample_size))^2)
   dimnames(covmat) <- list(est_names, est_names)
-  
   return(list(means = site_means, covmat = covmat, sample_size = sample_size))
 }
 
@@ -429,7 +435,7 @@ ests_sample3 <- get_estimates(sample3)
 
 ```
 
-Then, each object is converted to a `bain` object using the extracted information and combined in a list.
+Then, each object is converted to a `bain` object with these estimates
 ```{r}
 bain_sample1_ests <- bain(x = ests_sample1[['means']], 
                           Sigma = ests_sample1[['covmat']], 
@@ -454,8 +460,7 @@ And finally, on these objects, `pbf()` can be called.
 pbf(bain_allsamples_ests)
 ```
 <!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use-case, or is something off in the script? -->
-
-
+<!-- CJ: We should ask Herbert about this, but this example won't make it into this paper. If you want, you can send Herbert a reproducible example of the 'problem'!-->
 
 \newpage
 
