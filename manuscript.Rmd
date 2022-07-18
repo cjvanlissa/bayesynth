@@ -95,7 +95,7 @@ Each of these approaches requires making different assumptions about the nature 
 An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
 Instead of aggregating effect sizes, BES aggregates the evidence in favor of an informative hypothesis $H_i$ across studies.
 The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
-A Bayes factor can be interpreed as the ratio of evidence in favor of $H_i$ divided by evidence against it.
+A Bayes factor can be interpreted as the ratio of evidence in favor of $H_i$ divided by evidence against it.
 Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
 These Bayes factors can be synthesized across studies by taking their product.
 The resulting product Bayes factor (PBF) summarizes the total evidence for the hypothesis.
@@ -105,7 +105,7 @@ The only assumption of BES is that all study-specific hypotheses provide evidenc
 Although meta-analysis and BES are both research synthesis methods, they answer different research questions.
 Meta-analysis estimates the value or distribution of a population effect size. 
 It pools estimates of this effect size across multiple studies to obtain an overall estimate of the effect size.
-It thus answers the question: Givern certain assumptions about between-studies heterogeneity, what is the average population effect size?
+It thus answers the question: Given certain assumptions about between-studies heterogeneity, what is the average population effect size?
 BES, on the other hand, aggregates evidence in favor of an informative hypothesis across multiple studies.
 It thus answers the question: Do all these studies support the informative hypothesis?
 Both methods thus provide complementary information.
@@ -294,7 +294,19 @@ With increasing reliability, increasing specificity was traded off for decreasin
 
 
 # Tutorial
-This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `r R.Version()$version.string`, Rstudio version `r RStudio.Version()$version` and package `bain` version `r packageVersion('bain')`. This tutorial focusses on synthesizing evidence for an informative hypotheses using the Product Bayes Factor (pbf). To illustrate the method, a simulated counterpart of the data used in [REF Van Leeuwen et al. 2022] will be used avalable in `bain`. The data is used to investigate the relationship between political orientation and moral dispositions in three countries: the United states of America, Denmark and the Netherlands. A more detailed description of the dataset is either provided in [REF Van Leeuwen et al. 2022] or by running `?bain::synthetic_us`, `?bain::synthetic_dk` or `?bain::synthetic_nl`. 
+This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `r R.Version()$version.string`, Rstudio version `r RStudio.Version()$version` and package `bain` version `r packageVersion('bain')`. 
+This tutorial focusses on synthesizing evidence for an informative hypotheses using the Product Bayes Factor (pbf). 
+To illustrate the method, a simulated counterpart of the data used in [@vanleeuwen2022morality] will be used available in `bain`. 
+The data is used to investigate the relationship between political orientation and moral dispositions in three countries: the United states of America, Denmark and the Netherlands. 
+A more detailed description of the dataset is either provided in [@vanleeuwen2022morality] or by running `?bain::synthetic_us`, `?bain::synthetic_dk` or `?bain::synthetic_nl`. 
+
+
+```{r}
+US <- bain::synthetic_us
+DK <- bain::synthetic_dk
+NL <- bain::synthetic_nl
+```
+
 
 <!-- skeleton
 1.) explain calculation of single BF and what it means, refer to previous tutorial on the bayes factor
@@ -303,14 +315,21 @@ This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `
 -->
 
 ### The Bayes Factor using bain.
-In conventional Null-hypothesis significance testing (NHST), as the name implies, data is analysed to generate evidence for or against the null-hypothesis. This method can only evaluate a single hypothesis, the null-hypothesis, and its output is dichotomous in nature: whether a theoretical relationship is probable or improbable to exist given the data. However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much. In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis. Because the focus of this tutorial is on BES, this tutorial will only briefly introduce how to evaluate an hypothesis using the R package `bain` and interpret its output. For an extensive tutorial on how to evaluate informative hypotheses using `bain` see [@hoijtink2019tutorial].
+In conventional Null-hypothesis significance testing (NHST), as the name implies, data is analysed to generate evidence for or against the null-hypothesis. 
+This method evaluates a single hypothesis, the null-hypothesis, and its output is dichotomous in nature: whether a theoretical relationship is probable or improbable to exist given the data. 
+However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much. 
+In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis. 
+Because the focus of this tutorial is on BES, this tutorial will only briefly introduce how to evaluate an hypothesis using the R package `bain` and interpret its output. 
+For an extensive tutorial on how to evaluate informative hypotheses using `bain` see [@hoijtink2019tutorial].
 
-Suppose we are interested in whether someone's socio-political orientation, i.e. liberal-conservative, is associated with the moral value of 'group loyalty'. Participants in all countries completed two scales that measure either socio-political orientation or group loyalty. Because each scale consists of multiple items of which some are reverse coded, single factors scores for both scales are first created for each country. Because the scales may differ per country, they also need to be standardized
+Suppose we are interested in whether socio-political orientation, i.e. liberal-conservative, is associated with the subjective importance of the moral value 'group loyalty'. 
+Participants in the three countries completed two scales of which one measured their socio-political orientation and the other their group loyalty. 
+Because each scale consists of multiple items of which some are reverse coded, single factors scores for both scales are first created for each country. 
+The scales also differ per country, and thus are standardized.
+
+<!--EB: For simplicities sake, I for now create simple average scores without taking into account reverse coding. This should likely be improved with factor scores -->
 
 ```{r}
-# reverse code
-# create factor scores
-
 # I create simple average scores for now
 aggregate_scores <- function(country){
   df <- as.data.frame(cbind(
@@ -329,13 +348,17 @@ DKa <- aggregate_scores(DK)
 
 ```
 
-Socio-political orientation and group loyalty have been aggregated to variables `soc` and `grp` respectively. Both are continuous variables with higher scores indicating conservatism or higher group loyalty respectively. In NHST we specify the null hypothesis that there is no association between `soc` and `grp`. We can test this hypothesis in each country by calculating a standardized regressoin coefficient.
+Socio-political orientation and group loyalty have been aggregated to variables `soc` and `grp` respectively. 
+Both are continuous variables with higher scores indicating either conservatism or higher group loyalty. 
+In NHST we specify the null hypothesis that there is no association between `soc` and `grp`. 
+One method to test the hypothesis is to calculate a standardized regression coefficient.
 
 $H_0: \beta_{grp} = 0$.
 
-However, we may have prior expectations that higher group loyalty is somewhat related to  higher conservatism. An informative hypothesis could be:
+However, we may have prior expectations that higher group loyalty is somewhat related to  higher conservatism. 
+An informative hypothesis could be:
 
-$H_i: \beta_{grp} > .1$
+$H_i: \beta_{grp} > 0$
 
 <!-- SESAMESIM DATA: Let's say we are interested in whether the status of the site children grew up in (`site`) affects their score on a numbers test after watching Sesame Street for a year (`postnumb`). `postnumb` is a continuous variable which ranges from 0-63. `site` is a nominal variable indicating group membership with possible values 1 = disadvantaged inner city, 2 = advantaged suburban, 3 = advantaged rural, 4 = disadvantaged rural and 5 = disadvantaged Spanish speaking. In NHST we specify the null-hypothesis that the mean `postnumb` is equal for all groups in  site`: 
 
@@ -346,7 +369,8 @@ However, we may have prior expectations that the children growing up in an advan
 $H_i: \mu_{site2},\mu_{site3} > \mu_{site1},\mu_{site4},\mu_{site5}$ -->
 
 Because it is very improbable that $\beta_{grp}$ is exactly equal to 0, more information can be won by testing $H_i$.
-We can test $H_i$ by running a linear regression on the data and passing the `lm` object with the specific hypotheses to `bain`. For the Netherlands, the Bayes Factor would be calculated as follows:
+We can test $H_i$ by running a linear regression on the data and passing the `lm` object with the specific hypotheses to `bain`. 
+For a single study, such as the study that investigated the Netherlands, the Bayes factor would be obtained as follows:
 
 ```{r}
 # load bain package
@@ -356,7 +380,7 @@ library(bain)
 fit <- lm(soc ~ grp, data = NLa)
 
 #specify Hypotheses to evaluate
-hypotheses <- "grp > .1"
+hypotheses <- "grp > 0"
 
 fit_bain <- bain(fit, hypothesis = hypotheses)
 print(fit_bain)
@@ -390,10 +414,15 @@ pbf(lm_allsamples, hypotheses)
 
 The function returns a `data.frame` containing the passed hypotheses in the rows and in the columns the PBF and the individual Bayes Factor for each sample individually. The `PBF` of both hypotheses is close to zero, meaning that the combined evidence for both hypotheses over all studies is low. When looking at the individual Bayes Factors, we also see that the PBF is lower than all of the Bayes Factors individually. For sample 3 the specified hypotheses are even more likely than their complement. This example illustrates another strength of the PBF; being able to evaluate a hypothesis more extremely than the most extreme individual evaluation. If all samples do not support a hypothesis, than the number of times the hypothesis is not supported should be included in its evaluation. This leads to a more extreme combined evaluation than any individual evaluation. Likewise, if there is very strong support in only a small minority of the samples, while the majority of samples shows no support at all, than it is likely that the hypothesis is not true. -->
 
-Sometimes there is access to the data of not only a single, but multiple studies that all contain the necessary information to evaluate our hypothesis $H_i$. To evaluate $H_i$, it is possible to synthesize the support for $H_i$ over all studies using the PBF calculated with `pbf()`. In this example, data to evaluate $H_i$ is available for three countries.
+Sometimes there is access to the data of not only a single, but multiple studies that all contain the necessary information to evaluate our hypothesis $H_i$. 
+To evaluate $H_i$, it is possible to synthesize the support for $H_i$ over all studies using the pbf calculated with `pbf()`. 
+In this example, data to evaluate $H_i$ is available for three countries.
 
-In the first use-case of `pbf()`, an `lm()` is ran for each country All `lm` objects are stored in a list which is passed to `pbf()`.
-`pbf()` supports lists of all objects that `bain()` also supports. All supported types are specified in bain vignette *REF*. One exception is the use of named vectors, which will be covered later.
+In the first use-case of `pbf()`, an `lm()` is ran for each country. 
+All `lm` objects are stored in a list which is passed to `pbf()`.
+`pbf()` supports lists of all objects that `bain()` also supports. 
+All supported types are specified in the `bain` vignette. 
+One exception is the use of named vectors, which will be covered later.
 ```{r}
 fit_US <- lm(soc ~ grp + her, data = USa)
 fit_DK <- lm(soc ~ grp + her, data = DKa)
@@ -413,14 +442,14 @@ pbf(all_fits, hypotheses)
 The `pbf()` function also accepts multiple `bain` objects.
 This makes it possible to, for example, evaluate different sets of hypotheses for multiple data sets before using the resulting `bain` objects to aggregate the evidence for all hypotheses those datasets share in common.
 The example below illustrates this principle.
-The analyses have one hypotheses in common ($H_i: \beta_{grp} > .1$), but also contains one sample-specific hypothesis regarding $\beta_{her}$.
-The `pbf()` function is called on the list of  resulting `bain` objects and returns output for the common hypotheses.
-Note that, in this case, `pbf()` does not require an argument `hypotheses`, as the hypotheses are contained in the `bain` objects.
+The analyses have one hypotheses in common ($H_i: \beta_{grp} > 0$), but also contains one sample-specific hypothesis regarding $\beta_{her}$.
+The `pbf()` function is called on the list of the resulting `bain` objects and returns output for the common hypotheses.
+Note that, in this case, `pbf()` does not require an argument `hypothesiss`, as the hypotheses are contained in the `bain` objects.
 
 ```{r}
-bain_US <- bain(fit_US, "grp > .1; her = 0")
-bain_DK <- bain(fit_DK, "grp > .1; her > 0")
-bain_NL <- bain(fit_NL, "grp > .1; her < 0")
+bain_US <- bain(fit_US, "grp > 0; her = 0")
+bain_DK <- bain(fit_DK, "grp > 0; her > 0")
+bain_NL <- bain(fit_NL, "grp > 0; her < 0")
 
 bain_all <- list(bain_US, bain_DK, bain_NL)
 
@@ -429,7 +458,7 @@ pbf(bain_all)
 ```
 
 As can be seen, the results are identical to the results in the previous example. This means that the sample-specific hypotheses have been left out and only the hypotheses that each sample has in common are retained.
-When there are no common hypotheses, `pbf()` throws an error.
+When there are no hypotheses at all that are common in all objects, `pbf()` throws an error.
 
 ```{r, echo = FALSE, eval = FALSE}
 bains_different_hyps <- list(
@@ -450,43 +479,67 @@ tryCatch({
 
 A third use-case occurs when the raw data from different samples is not available.
 This may happen, for example, when aggregating findings from the published literature (similar to meta-analysis).
-In this case, one can use the default interface of `bain`, as explained in [REFERENCE BAIN PAPER Hoijtink, Mulder, van Lissa, & Gu, (2019) <doi:10.31234/osf.io/v3shc>].
+In this case, one can use the default interface of `bain`, as explained in [@hoijtink2019tutorial].
 This function requires four arguments: A named vector of parameter estimates, their asymptotic covariance matrix, the original sample size, and the number of within-group and between-group parameters.
 These arguments may be derived in different ways for distinct samples.
 The example below illustrates how to aggregate evidence in favor of one hypotheses across three studies that each used different methods.
 <!-- CJ: What I'd like to do here is show how to aggregate a t-test, a regression coefficient and a correlation coefficient -->
 
+In this specific use-case, let's suppose three different statistics have been calculated to analyse the data of the three countries. 
+Each statistic was calculated to establish the relationship between `grp` and `soc`:
+1. A correlation coefficient was calculated using the US data.
+2. A standardized regression coefficient for `grp` was calculated using the DK data.
+3. A t-test was performed using the NL data. 
+To simulate groups to perform a t-test on, the `grp` variable in the NL data will be recoded to 0 and 1 which represent a score below or above the median of `grp` respectively.
+
+The current $H_i: \beta_{grp} > 0$ effectively tests the following:
+*There is a positive association between political conservatism and subjective importance of group loyalty*
+But $\beta_{grp}$ is a regression-specific parameter which was not calculated in two out of three studies.
+Therefore, the three sample-specific hypotheses that answer the same underlying $H_i$ are:
+- 1. $H_i^{US}: \rho_{grp,soc} > 0$
+- 2. $H_i^{DK}: \beta_{grp} > 0$
+- 3. $H_i^{NL}: \mu_{soc}^{conservative} > \mu_{soc}^{liberal}$
+
+
+These statistics to test the hypotheses along with their standard error can be passed to `bain` and do not require the raw data. 
+The pbf can then be calculated and a single score can be synthesized to evaluate $H_i$. 
+This despite different statistical methods being used to establish the relationship between `grp` and `soc`.
+
 ```{r}
-library(bain)
+US_est <- c(grp = cor(USa$soc, USa$grp))
+US_se <- sqrt(1-US_est^2) / sqrt(nrow(USa)-2) # formula for SE of correlation coefficient: sqrt(1-r^2)/sqrt(n-2)
 
-### THESE DATA WILL BE USED (READ CASPARS WHATSAPP MESSAGES)
-DK <- bain::synthetic_dk
-US <- bain::synthetic_us
-NL <- bain::synthetic_nl
-?bain::synthetic_dk
+DK_fit <- summary(lm(soc~grp, data = DKa))
+DK_est <- c(grp = DK_fit$coefficients['grp', 'Estimate'])
+DK_se <- DK_fit$coefficients['grp', 'Std. Error']
 
-# dat <- as.data.frame(cbind(
-#   X = c(rnorm(1000,0,1), rnorm(1000, 0.2, 1)),
-#   group = rep(0:1, each = 1000)
-#   ))
+### EB: I have a question When calculating the estimate for NL. I assume I need the effect size of the t-test, rather than the t-statistic itself. This requires Cohen's d. Is this correct? In this case I do not even need to do a t-test, I only need the descriptive statistics of the two samples
 
-# dat$group <- as.factor(dat$group)
+NLa$grp_recoded <- as.factor(sapply(NLa$grp,function(i){ ifelse(i < median(NLa$grp), 0, 1) }))
+liberals <- NLa$soc[NLa$grp_recoded == 0]
+conservatives <- NLa$soc[NLa$grp_recoded == 1]
 
-# x <- dat[dat$group == 0, 1]
-# y <- dat[dat$group == 1, 1]
-# 
-# ttest <- t_test(x,y, var.equal = TRUE, paired = FALSE)
-# res <- bain(ttest, hypothesis = "y > x")
-# 
-# 
-# fit_lm <- lm(X ~ group-1, data = dat)
-# res_lm <- bain(fit_lm, hypothesis = "group1 > group0")
-# 
-# cor.test(y = dat$X, x = rep(0:1, each = 1000))
+nlib <- length(liberals)
+ncon <- length(conservatives)
+pooled_sd <- sqrt(((ncon-1)*sd(conservatives) + (nlib-1)*sd(liberals)) / (nlib+ncon-2) )
+
+NL_est <- c(grp = (mean(conservatives) - mean(liberals)) / pooled_sd)
+NL_se <- sqrt(((ncon+nlib)/(ncon*nlib)) + NL_est^2/(2*(ncon+nlib))) # formula for SE of cohen's D retrieved from https://stats.stackexchange.com/questions/495015/what-is-the-formula-for-the-standard-error-of-cohens-d#:~:text=Cohen's%20d%20is%20defined%20as,%E2%88%922%20(see%20here).
+
+```
+The values are then converted to `bain` objects, put in a list, and passed to `pbf()`. 
+```{r}
+US_bain <- bain(x = US_est, Sigma = matrix(US_se, 1, 1), n = nrow(USa), hypothesis = hypotheses)
+DK_bain <- bain(x = DK_est, Sigma = matrix(DK_se, 1, 1), n = nrow(DKa), hypothesis = hypotheses)
+NL_bain <- bain(x = NL_est, Sigma = matrix(NL_se, 1, 1), n = nrow(NLa), hypothesis = hypotheses)
+
+pbf(list(US_bain, DK_bain, NL_bain))
 ```
 
+The output provides evidence for or against the hypothesis: *there is a positive association between political conservatism and subjective importance of group loyalty*.
+Although each study used a different method to operationalize the evidence for that hypothesis, their evidence can be synthesized to a single value using the pbf.
 
-
+<!--
 ```{r, eval = FALSE, echo = FALSE}
 get_estimates <- function(sample){
   number_sites <- length(levels(sesamesim$site))
@@ -539,6 +592,7 @@ And finally, on these objects, `pbf()` can be called.
 ```{r}
 pbf(bain_allsamples_ests)
 ```
+-->
 <!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use-case, or is something off in the script? -->
 <!-- CJ: We should ask Herbert about this, but this example won't make it into this paper. If you want, you can send Herbert a reproducible example of the 'problem'!-->
 
