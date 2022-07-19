@@ -294,11 +294,19 @@ With increasing reliability, increasing specificity was traded off for decreasin
 
 
 # Tutorial
-This tutorial about Bayesian Evidence Synthesis (BES) requires installation of `r R.Version()$version.string`, Rstudio version `r RStudio.Version()$version` and package `bain` version `r packageVersion('bain')`. 
+
+This tutorial about Bayesian Evidence Synthesis (BES) requires R-package `bain` version `r packageVersion('bain')` or later.
 This tutorial focusses on synthesizing evidence for an informative hypotheses using the Product Bayes Factor (pbf). 
-To illustrate the method, a simulated counterpart of the data used in [@vanleeuwen2022morality] will be used available in `bain`. 
-The data is used to investigate the relationship between political orientation and moral dispositions in three countries: the United states of America, Denmark and the Netherlands. 
-A more detailed description of the dataset is either provided in [@vanleeuwen2022morality] or by running `?bain::synthetic_us`, `?bain::synthetic_dk` or `?bain::synthetic_nl`. 
+The data used to illustrate the method have been simulated based on the data presented in [@vanleeuwen2022morality].
+These simulated data are available in the `bain` package. 
+A more detailed description of the dataset is either provided in [@vanleeuwen2022morality] or by running `?bain::synthetic_us`, `?bain::synthetic_dk` or `?bain::synthetic_nl`.
+The research question is whether there is an association between political orientation and moral dispositions.
+Suitable data were collected in three countries: the United states of America, Denmark and the Netherlands.
+Each sample contains multiple measures of political orientation and moral dispositions.
+In the original publication, the PBF was used to aggregate evidence across scales and countries to obtain an overall measure of support for the central hypothesis.
+This tutorial follows the same rationale, but uses only one effect size per sample,
+and varies the way this effect size is computed to illustrate different use cases. 
+
 
 
 ```{r}
