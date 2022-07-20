@@ -121,6 +121,12 @@ and illustrates several use cases through reproducible examples.
 
 # Simulation study
 
+<!-- Rebecca: -->
+<!-- ms meer over het model vertellen. -->
+<!-- Is het voor de lezer duidelijk waar ineens deze groepen vandaan komen? Zijn dat je aantal studies die je gaat samennemen? -->
+<!-- Dus bijv: -->
+<!-- In de populatie zijn er twee variabelen, die cooreleren met de waarde rho. We hebben k studies die elk een sample van n hebben getrokken/verzameld. Dan vertelen wat de verschillende algrotithms doen met de verschillende samples (meeste als niet alle: In elke sample wordt de sample correlatie bepaald; dan estimates samenemen en null hypo test of in each sample bewijs voor hypo en dat samennemen). Dan iets over de verschillende waardes die je bekijkt en dat elke combi een simulatie conditie is. En dan iets als: Dit doen we 1000 keer per set van condities.  -->
+<!-- En dan nog iets over reliability ook. -->
 The present simulation study set out to validate the PBF algorithm.
 For each iteration of the simulation, we simulated a correlation coefficient in multiple samples.
 <!-- CJ: Hier staat multiple samples; elders multiple groups / studies / etc. Kan je die terminologie gelijktrekken? -->
@@ -129,7 +135,7 @@ All simulation conditions were evaluated once in the presence of a true populati
 defined as $\rho = .2$,
 and once in the presence of a null effect, defined as $\rho = .1$.
 A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported over its complement.
-Note that this threshold is subjective but rooted in conventional standards for interpreting Bayes factors [@jeffreys1998theory].
+This threshold is subjective but rooted in conventional standards for interpreting Bayes factors [@jeffreys1998theory].
 <!-- Rebecca: -->
 <!-- waar is > 3 op gebaseerd? -->
 <!-- Kass&Raftery? Als ja, bedenk wel dat dat om equaility restricties gaat (bij mijn weten). Je kan het natuurlijk gebruiken, maar plaats dan wel de kanttekening, maar is een uitgangspunt natuurlijk.  -->
@@ -137,8 +143,28 @@ Note that this threshold is subjective but rooted in conventional standards for 
 <!-- Maar het blijft een dichitome beslissing zo.... -->
 <!-- Laat je het gemiddelde PBF met range ofzo zien.... zo niet, dan zou dat toevoegen. Dan zie je meer dan een dichitome beslissing. -->
 <!-- En ms kan je ook ene keer 1 en 2 gebruiken, gewoon om te zien wat er gebeurt? -->
-As a benchmark for comparison, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
-The first was vote counting: counting the number of significant effects across samples.
+<!-- Rebecca: -->
+<!-- Now, you will say that selecting > .1 with rho .1 is false, but it is not false. It is on the border, so Hi is true.  -->
+<!-- In practice it may be true half of the time, because of sampling, but still. -->
+<!-- This should be reflected by BF is approx 1. -->
+<!-- In your simulation, you use PBF > 3, so this may be hard to reach when the truth is on the border, but that is due to the subjective choice of 3... -->
+<!-- So, I already thought that using a smaller population rho value would be of added value, but now I believe you should really include this. -->
+<!-- I do see that this would end up in multiple results (once using .1 and 0.2, once (say) 0 or 0.05 and .2; but also when using other cut-off values for PBF). -->
+To examine performance in a range of realistic scenarios,
+several design factors were manipulated:
+The number of observations per sample $n \in (50, 200, 500, 800)$,
+which (assuming a known effect of $\rho = .1$) provides statistical power to reject a false null hypothesis at $\alpha = .05$ of
+$(`r paste0(formatC(pwr.r.test(c(50, 200, 500, 800), .1)$power, digits = 2, format=  "f"), collapse = ", ")`)$, respectively.
+the number of samples $k \in (2, 3, 10)$, where 2 is the minimum number of samples possible and 10 is a relatively large number, considering that replications are not very common.
+The reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is
+assumed when analyzing correlations between observed items or scale scores.
+For all unique combinations of the design factors, 1000 data sets were generated.
+
+## Algorithms
+
+The main algorithm of interest was the PBF.
+As a benchmark for comparison, we included several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
+The first was vote counting: counting the number of significant effects.
 Although this method is in use for aggregating conceptual replications,
 it should not be considered good practice.
 Three disadvantages are that vote counting disregards sample size,
@@ -148,31 +174,27 @@ Our vote counting algorithm used one-sided z-tests to examine whether a null hyp
 Thus, for example, if $H_a$ was supported in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extention, $H_i$).
 The second was a random-effects meta-analysis (RMA), which is the standard in the field.
 For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
-Third was an individual participant data (IPD) meta-analysis.
+The third algorithm was individual participant data (IPD) meta-analysis.
 Like classic meta-analysis, IPD is a multilevel model, clustered by sample.
-In contrast to classic meta-analysis, however, IPD freely estimates variance at the first level, because raw data are available.
+In contrast to classic meta-analysis, IPD freely estimates variance at the first level, because raw data are available.
 The PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
 It is thus informative to compare the PBF to both these methods.
 IPD was also evaluated using a 90% confidence interval for the overall effect size.
+<!-- Rebecca: -->
+<!-- zou je dit vooraf moeten zeggen? -->
+<!-- Dan zeggen dat ILP dit ook kan en dan zeggen dus dat ook als vergelijking meenemen? -->
+<!-- Ms zelfs in intro dit al noemoen, dan zeggen dat er twee meta-an equivalenten zijn, waarin je null hypo testing kan doen. En we dat gaan meenemen om te vergelijken. -->
+
 
 ## Performance indicators
 
-For each algorithm, a confusion matrix was obtained by tabulating inferential decisions made using the criteria described above against the population status of the hypothesis (true or false).
-This matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
-These quantities were summarized as sensitivity, $1-\frac{FN}{TP + FN}$, the probability of concluding the hypothesis is false given that it was truly false in the population, <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
+For each algorithm, inferential decisions made using the criteria described above were compared to the population status of the hypothesis (true or false).
+This results in a so-called "confusion matrix",
+which gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
+These quantities were summarized as sensitivity, ${TP}{TP + FN}$, the probability of making the inferential decision that the informative hypothesis is supported, given that it was indeed true in the population, <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
 <!--CJ: This is all the same, see https://en.wikipedia.org/wiki/Sensitivity_and_specificity -->
-and specificity, $1-\frac{FP}{FP + TN}$, the probability of concluding the hypothesis is true given that it was also true in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
-The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive/true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
-
-## Design factors
-
-To examine performance in a range of realistic scenarios,
-several design factors were manipulated:
-The sample size per group $n \in (20, 80, 200, 500)$,
-the number of groups $k \in (2, 3, 10)$, where 2 is the minimum number of groups and 10 is a very large number of groups,
-and the reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is assumed when analyzing correlations between observed items or scale scores.
-The design factors combined to produce `r out$conditions` unique conditions.
-For all simulation conditions, 1000 data sets were generated. 
+and specificity, $\frac{TN}{TN+FP}$, the probability of concluding the informative hypothesis is not supported, given that it was indeed false in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
+The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive and true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
 
 ```{r, echo = F}
 library(data.table) # load in libraries
@@ -196,13 +218,14 @@ rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
 ```
 First, we examined overall model performance across conditions.
-These results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
+Recall that sensitivity is the probability of concluding that the informative hypothesis is supported, given that it was indeed true in the population,
+and specificity, is the probability of concluding that it is not supported, given that it was false in the population.
+The results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
 In contrast, specificity was very high for all algorithms except PBF.
 This suggests that the other algorithms classified most conditions as negatives (no effect found),
 regardless of the existence of a population effect.
-The PBF trades a loss of specificity for increased sensitivity,
-and average levels of both were approximately equal.
-As the PBF vastly outperformed other BFs, these were omitted from further analysis.
+The PBF trades a loss of specificity for increased sensitivity.
+At the same time, the average specificity and sensitivity were approximately equal, see Table \@ref(tab:tabconf).
 
 ## Effect of simulation conditions
 
@@ -215,8 +238,11 @@ names(tab)[grepl("\\.{2}", names(tab))] <- paste0("vs ", gsub("(\\.|PBF|vs)", ""
 knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
 ```
 PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
-<!-- should we also test for interaction effects? I seem to remember that there were some interesting effects of errorsd*k and n*k -->
-<!-- CJ: I don't think so, that might be more relevant for one of the papers that focused on the simulation study. For this tutorial, a simpler sim is fine. -->
+<!-- Rebecca: Nu niet compleet? -->
+<!-- Gek om steeds ene paragraaf van 1 zin te hebben iig. -->
+<!-- Verder mist er denk ik info. Ik zou graag eerst meer uitleg zien. Hoe heb je dat examine, wat ga je laten zien (niet het resultaat an sich, snap je wat ik bedoel...). -->
+<!-- Verder zou ik denk ik niet hier al weggeven wat je hierna gaat laten zien (en anders dat explicieteren dat dat is wat je doet). -->
+
 
 ### Effect of sample size
 
@@ -748,6 +774,13 @@ pbf(bain_allsamples_ests)
 <!-- It renders support for the hypothesis being the best in all studies. It, thus, does not render the support for the hypothesis being on average the best. -->
 
 <!-- Hier ook dan artikel van BEM noemen, maar oook zeggen dat het daar om null hypotheses gaat. -->
+
+<!-- Rebecca: -->
+<!-- ook iets zeggen over vergelijkbaarheid? -->
+<!-- Ws hierboven al iets over zeggen: -->
+<!-- In klassieke methoden heb je equality restrictie. -->
+<!-- Als rho = .1 dan null waar en moet je hem niet verwerpen, als .2 dan H0 niet waar en moet je H0 wel verwerpen. -->
+<!-- Bij BF heb je Hi en als .1 dan eigenlijk zelfs Hi waar, maar op border/boundary, dus ws dan BF = ong 1. Als .2 dan Hi waar en moet je BF > 1 vinden (evt dus > 3). -->
 
 \newpage
 
