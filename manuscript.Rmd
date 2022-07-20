@@ -60,6 +60,7 @@ run_everything <- FALSE
 library("papaja")
 library(tidySEM)
 library(kableExtra)
+library(pwr)
 r_refs("r-references.bib")
 out <- readRDS("out.RData")
 ```
@@ -792,6 +793,8 @@ pbf(bain_allsamples_ests)
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
 
 
 
