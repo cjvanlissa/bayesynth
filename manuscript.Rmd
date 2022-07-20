@@ -89,15 +89,19 @@ In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissa
 First, if studies are exact replications, one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
 Second, when heterogeneity between studies can be assumed to be because of random measurement error, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
 Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
-And finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
-Each of these approaches requires making different assumptions about the nature of heterogeneity.
+Finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
+Each of these approaches requires making different assumptions about the nature of heterogeneity [see "Models for meta-analysis" in @vanlissaSmallSampleMetaanalyses2020].
 
-An alternative approach for evidence synthesis that does not impose such assumptions is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
+An alternative approach for evidence synthesis that does not impose assumptions about heterogeneity is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
 Instead of aggregating effect sizes, BES aggregates the evidence in favor of an informative hypothesis $H_i$ across studies.
 The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
-A Bayes factor can be interpreted as the ratio of evidence in favor of $H_i$ divided by evidence against it.
+A Bayes factor can be interpreted as the ratio of evidence in favor of one hypothesis $H_1$ relative to another hypothesis $H_2$, so $BF_{12} = \frac{H_1}{H_2}$.
+For the purpose of this paper, we will assume that all Bayes factors are the Bayes factors of an informative hypothesis $H_i$ against its complement $H_{!i}$, $BF_{c} = \frac{H_i}{H_!i}$. 
+In this context, the subscript $_!$ represents the negation operator; in other words, $H_{!i}$ means "not $H_i$".
+Consequently, $BF_c$ represents the ratio of evidence in favor of $H_i$ divided by evidence against it.
 Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
-These Bayes factors can be synthesized across studies by taking their product.
+When multiple studies each provide evidence for $H_i$ in the form of complement Bayes factors,
+these Bayes factors can be synthesized across studies by taking their product.
 The resulting product Bayes factor (PBF) summarizes the total evidence for the hypothesis.
 Note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
 The only assumption of BES is that all study-specific hypotheses provide evidence about the same underlying theoretical relationship.
@@ -119,15 +123,29 @@ and illustrates several use cases through reproducible examples.
 
 The present simulation study set out to validate the PBF algorithm.
 For each iteration of the simulation, we simulated a correlation coefficient in multiple samples.
+<!-- CJ: Hier staat multiple samples; elders multiple groups / studies / etc. Kan je die terminologie gelijktrekken? -->
 The informative hypothesis was kept constant at $H_i: \rho > .1$.
 All simulation conditions were evaluated once in the presence of a true population effect,
 defined as $\rho = .2$,
 and once in the presence of a null effect, defined as $\rho = .1$.
-A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported.
+A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported over its complement.
+Note that this threshold is subjective but rooted in conventional standards for interpreting Bayes factors [@jeffreys1998theory].
+<!-- Rebecca: -->
+<!-- waar is > 3 op gebaseerd? -->
+<!-- Kass&Raftery? Als ja, bedenk wel dat dat om equaility restricties gaat (bij mijn weten). Je kan het natuurlijk gebruiken, maar plaats dan wel de kanttekening, maar is een uitgangspunt natuurlijk.  -->
+<!-- Of vertel over betting odds... -->
+<!-- Maar het blijft een dichitome beslissing zo.... -->
+<!-- Laat je het gemiddelde PBF met range ofzo zien.... zo niet, dan zou dat toevoegen. Dan zie je meer dan een dichitome beslissing. -->
+<!-- En ms kan je ook ene keer 1 en 2 gebruiken, gewoon om te zien wat er gebeurt? -->
 As a benchmark for comparison, we used several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
-The first was a "vote count" algorithm,
-which is common but not considered to be good practice [REF].
-This approach used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$.
+The first was vote counting: counting the number of significant effects across samples.
+Although this method is in use for aggregating conceptual replications,
+it should not be considered good practice.
+Three disadvantages are that vote counting disregards sample size,
+reduces statistical power,
+and does not quantify the strength of the evidence [(Scheerens, 2015):].
+Our vote counting algorithm used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$, and $H_a: \rho > .1$, which corresponds to $H_i$.
+Thus, for example, if $H_a$ was supported in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extention, $H_i$).
 The second was a random-effects meta-analysis (RMA), which is the standard in the field.
 For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
 Third was an individual participant data (IPD) meta-analysis.
@@ -722,6 +740,14 @@ pbf(bain_allsamples_ests)
 -->
 <!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use-case, or is something off in the script? -->
 <!-- CJ: We should ask Herbert about this, but this example won't make it into this paper. If you want, you can send Herbert a reproducible example of the 'problem'!-->
+
+# Discussion
+
+<!-- Rebecca: -->
+<!-- Ws niet een punt voor hier, maar wel in de discussie ofzo: -->
+<!-- It renders support for the hypothesis being the best in all studies. It, thus, does not render the support for the hypothesis being on average the best. -->
+
+<!-- Hier ook dan artikel van BEM noemen, maar oook zeggen dat het daar om null hypotheses gaat. -->
 
 \newpage
 
