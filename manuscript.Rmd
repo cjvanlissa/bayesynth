@@ -321,7 +321,7 @@ The PBF was benchmarked against other common methods for evidence synthesis.
 This was done by calculating the accuracy, sensitivity and specificity of the methods in different plausible varying conditions.
 During the simulation the hypotheses remained constant $H_i: \rho > .1$, $H_0: \rho = .1$.
 To be able to calculate both sensitivity and specificity, half of the simulated conditions contained an effect, $\rho = .2$, while the other half did not, $\rho = .1$.
-<!-- EB: I don't know why we did not use H0:r=0 and Hi:r>0 as constant hypotheses. It seems more intuitive -->
+<!-- EB: Why did we not use H0:r=0 and Hi:r>0 as constant hypotheses? It seems more intuitive -->
 Sensitivity and specificity can be interpreted as Type I error rate and statistical power respectively and are used interchangeably.
  <!-- Because Type 1 error rate and power seem to be key terms in the discussion, we may be able to include it in the introduction: 'How does the PBF compare to other state-of-the-art algorithms with regards to Type 1 error rate, power and overall accuracy?' -->
 
@@ -330,7 +330,7 @@ The overall performance of PBF increased most with increasing sample size.
  <!-- EB: also, shall we rename 'performance' to 'accuracy', I know its not the same, but performance seems a bit too subjective. After all, we do not have a clear cut decision when sensitivity and specificity is balanced 'correctly' --> 
 PBF's sensitivity was .57 when a sample size of 20 per sample was simulated, while for all other algorithms this was below .11.
 It should be noted that in the condition where sensitivity could be calculated, the true effect $\rho$ was .2 and only .1 points above the boundary value for $H_i > .1$ and $H_0 = .1$.
-It is no surprise that at smaller samples, the small difference in effect size between null/informative hypothesis and true value of .1, is unlikely to be detected.
+It is no surprise that at smaller samples the small difference in effect size between null/informative hypothesis and true value of .1 is unlikely to be detected.
 Still, even at a relatively large sample size of 500 per sample, the sensitivity of the other algorithms only rose slightly above .60, 
 while for PBF this was .90.
 This provides evidence that state-of-the-art evidence synthesis methods have little power to detect a true, but small effect,
@@ -394,7 +394,24 @@ It implies that PBF works best as a complementary method for evidence synthesis,
 <!-- Ws niet een punt voor hier, maar wel in de discussie ofzo: -->
 <!-- It renders support for the hypothesis being the best in all studies. It, thus, does not render the support for the hypothesis being on average the best. -->
 
-<!-- Hier ook dan artikel van BEM noemen, maar ook zeggen dat het daar om null hypotheses gaat. -->
+<!-- EB: I assume Rebecca means that 'the hypothesis being on average the best' is the hypothesis that reflects the truth. While 'the hypothesis that is best in all studies' is the hypothesis that is closest to the truth compared to the other hypotheses that were tested. It does not say anything necessarily about whether the tested hypotheses in general are good reflections of the truth.
+
+<!--Rebecca: Hier ook dan artikel van BEM noemen, maar ook zeggen dat het daar om null hypotheses gaat. -->
+
+<!--EB: dit refereert naar Rouder, J. N., & Morey, R. D. (2011). A Bayes factor meta-analysis of Bem’s ESP claim. Psychonomic Bulletin & Review, 18(4), 682-689.
+
+The argument from Rouder and Morey (2011) is that we cannot take the PBF as a valid measure for meta-analysis. They show that calculating the BF in multiple samples and taking their product results in a different PBF than when all data is pooled and the BF is calculated after pooling. However, they assume a constant effect where all data is drawn from a common distribution The idiosyncratic differences between studies makes that pooling data is not a straightforward endeavour, because of the heterogeneity of the effect. Rouder and Morey do acknowledge their choice for a constant effect to be debatable.
+
+Quote from the Rouder and Morey (2011) paper:
+"It is reasonable to wonder whether the constant effect
+size model underlying the meta-analytic Bayes factor is
+warranted. We chose this approach because it is tractable
+when researchers have access to the test statistics, rather
+than the raw data."
+
+Interesting statement. Intuitively I do not see how having only the test statistics compared to raw data makes the assumption of a constant effect more probable. After all, the test statistic is derived from the raw data...
+
+Rebecca noticed that Rouder and Morey specifically talk about PBF not being a good measurement in the context of testing H0, which is something that we are not doing. However, the only relevant difference I see in their vs our method is that their H0 contains a single equality constraint, while we used inequality constraints. Rouder and Morey do not explicitly point this difference out and I dont see how the PBF would be a bad or good idea depending on type of constraints. -->
 
 <!-- Rebecca: -->
 <!-- ook iets zeggen over vergelijkbaarheid? -->
