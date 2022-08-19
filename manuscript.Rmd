@@ -316,7 +316,7 @@ Note that, in contrast to other algorithms, the performance of PBF is less susce
 
 # Discussion
 
-This simulation study validated the product Bayes factor as an alternative method to synthesize evidence across studies.
+This simulation study validated the product Bayes factor as an alternative or complementary method to synthesize evidence across studies.
 The PBF was benchmarked against other common methods for evidence synthesis.
 This was done by calculating the accuracy, sensitivity and specificity of the methods in different plausible varying conditions.
 During the simulation the hypotheses remained constant $H_i: \rho > .1$, $H_0: \rho = .1$.
@@ -324,9 +324,9 @@ To be able to calculate both sensitivity and specificity, half of the simulated 
 <!-- EB: Why did we not use H0:r=0 and Hi:r>0 as constant hypotheses? It seems more intuitive -->
 Sensitivity and specificity can be interpreted as Type I error rate and statistical power respectively and are used interchangeably.
  <!-- Because Type 1 error rate and power seem to be key terms in the discussion, we may be able to include it in the introduction: 'How does the PBF compare to other state-of-the-art algorithms with regards to Type 1 error rate, power and overall accuracy?' -->
+The effect of sample size per study, number of studies and reliability of measurement on the performance of the algorithms was investigated.
 
-
-The overall performance of PBF increased most with increasing sample size.
+The overall performance of the PBF increased most with increasing sample size.
  <!-- EB: also, shall we rename 'performance' to 'accuracy', I know its not the same, but performance seems a bit too subjective. After all, we do not have a clear cut decision when sensitivity and specificity is balanced 'correctly' --> 
 PBF's sensitivity was .57 when a sample size of 20 per sample was simulated, while for all other algorithms this was below .11.
 It should be noted that in the condition where sensitivity could be calculated, the true effect $\rho$ was .2 and only .1 points above the boundary value for $H_i > .1$ and $H_0 = .1$.
@@ -364,7 +364,7 @@ Even at the smallest acceptable reliability, $\alpha = .6$, PBFs sensitivity was
 However, the specificity of the PBF when there is perfect reliability $\alpha=1$ was .63, were it was almost 1 for the other algorithms.
 
 Overall, there was only a single marginal condition where the accuracy of PBF was lower than that of any other algorithm.
-PBF scored .01-.02 percentage points lower accuracy than IPD and RMA when there was perfect reliability.
+PBF scored 1-2 percentage points lower accuracy than IPD and RMA when there was perfect reliability.
 Looking at the specificity and sensitivity however, this is explained by the relatively low specificity of PBF and the very high specificity of RMA and IPD.
 Thus,
 Within the scope of this simulation, PBF had relatively better inferential properties <!-- EB: higher accuracy --> than the other algorithms under consideration.
@@ -390,17 +390,27 @@ It implies that PBF works best as a complementary method for evidence synthesis,
 <!--  tables. -->
 <!--  2. J -->
 
+
 <!-- Rebecca: -->
 <!-- Ws niet een punt voor hier, maar wel in de discussie ofzo: -->
 <!-- It renders support for the hypothesis being the best in all studies. It, thus, does not render the support for the hypothesis being on average the best. -->
 
-<!-- EB: I assume Rebecca means that 'the hypothesis being on average the best' is the hypothesis that reflects the truth. While 'the hypothesis that is best in all studies' is the hypothesis that is closest to the truth compared to the other hypotheses that were tested. It does not say anything necessarily about whether the tested hypotheses in general are good reflections of the truth.
+<!-- EB: I assume Rebecca means that we should note that 'the hypothesis being on average the best' is the hypothesis that reflects the truth. While 'the hypothesis that is best in all studies' is the hypothesis that is closest to the truth compared to the other hypotheses that were tested. It does not say anything necessarily about whether the tested hypotheses in general are good reflections of the truth. E.g, if we only test whether the earth is either flat-shaped or triangular and not acknowledge other options, then we would incorrectly conclude that the earth is flat.-->
+The interpretation of the PBF should also be considered.
+The PBF renders support for some hypothesis being the best in all studies, but only compared to other hypotheses it has been tested against.
+This means that the tested hypothesis with most support is not necessarily the hypothesis that reflects the truth most closely.
+This is because there are many other plausible hypotheses that have not been tested.
+For example, testing whether the earth is flat or triangular excludes the possibility of a spherical earth.
+
+
+
 
 <!--Rebecca: Hier ook dan artikel van BEM noemen, maar ook zeggen dat het daar om null hypotheses gaat. -->
 
 <!--EB: dit refereert naar Rouder, J. N., & Morey, R. D. (2011). A Bayes factor meta-analysis of Bem’s ESP claim. Psychonomic Bulletin & Review, 18(4), 682-689.
 
-The argument from Rouder and Morey (2011) is that we cannot take the PBF as a valid measure for meta-analysis. They show that calculating the BF in multiple samples and taking their product results in a different PBF than when all data is pooled and the BF is calculated after pooling. However, they assume a constant effect where all data is drawn from a common distribution The idiosyncratic differences between studies makes that pooling data is not a straightforward endeavour, because of the heterogeneity of the effect. Rouder and Morey do acknowledge their choice for a constant effect to be debatable.
+The argument from Rouder and Morey (2011) is that we cannot take the PBF as a valid measure for meta-analysis. They show that calculating the BF in multiple samples and taking their product results in a different PBF than when all data is pooled and the BF is calculated after pooling. They also show another way of calculating a meta-analytic BF and that this pooled BF comes closer to that meta-analytic BF. However, this calculation assume a constant population effect and the same type of statistical model across studies
+. where all data is drawn from a common distribution The idiosyncratic differences between studies makes that pooling data is not a straightforward endeavour, because of the heterogeneity of the effect. Rouder and Morey do acknowledge their choice for a constant effect to be debatable.
 
 Quote from the Rouder and Morey (2011) paper:
 "It is reasonable to wonder whether the constant effect
@@ -411,7 +421,17 @@ than the raw data."
 
 Interesting statement. Intuitively I do not see how having only the test statistics compared to raw data makes the assumption of a constant effect more probable. After all, the test statistic is derived from the raw data...
 
-Rebecca noticed that Rouder and Morey specifically talk about PBF not being a good measurement in the context of testing H0, which is something that we are not doing. However, the only relevant difference I see in their vs our method is that their H0 contains a single equality constraint, while we used inequality constraints. Rouder and Morey do not explicitly point this difference out and I dont see how the PBF would be a bad or good idea depending on type of constraints. -->
+Rebecca noticed that Rouder and Morey specifically talk about PBF not being a good measurement in the context of testing H0, which is something that we are not doing. However, the only relevant difference I see in their vs our method is that their H0 contains a single equality constraint, while we used inequality constraints. Rouder and Morey do not explicitly point this difference out and I don't see how the PBF would be a bad or good idea depending on type of constraints. 
+
+They also do it for a single parameter t, but it would not work if there are multiple different units.-->
+
+The article of @rouder2011bayes states that a meta-analytic Bayes factor is not as straightforward as taking the product of $k$ individual Bayes factors.
+Rather, they provide a way of calculating more valid a meta-analytic Bayes factor.
+However, only under the assumption that the population effect is constant and the test statistic is from the same type of statistical model.
+Using this form of the PBF, they show that pooling the data and calculating a single Bayes factor on the pooled data comes closer to the meta-analytic Bayes factor than taking the product of each individual study.
+However, as stated earlier, one strength of the PBF lies in its ability to synthesize evidence for a hypothesis, rather than an estimate.
+This means that there is no assumption of a constant population effect and/or equal types of test statistics across studies.
+Furthermore, as the article of @rouder2011bayes states itself, pooling data is valid if all data is independent and drawn from a common distribution.
 
 <!-- Rebecca: -->
 <!-- ook iets zeggen over vergelijkbaarheid? -->
@@ -419,6 +439,17 @@ Rebecca noticed that Rouder and Morey specifically talk about PBF not being a go
 <!-- In klassieke methoden heb je equality restrictie. -->
 <!-- Als rho = .1 dan null waar en moet je hem niet verwerpen, als .2 dan H0 niet waar en moet je H0 wel verwerpen. -->
 <!-- Bij BF heb je Hi en als .1 dan eigenlijk zelfs Hi waar, maar op border/boundary, dus ws dan BF = ong 1. Als .2 dan Hi waar en moet je BF > 1 vinden (evt dus > 3). -->
+
+<!--EB: What I think Rebecca means here is the following: 
+In classical NHST, there is an equality resitriction. we either do or do not reject H0, so either rho = x or rho != x. Rejecting H0, means that the data suggests that rho != .1, but rather something else than .1 (so .2, .9, -.9 etc.)
+With RMA and IPD we effectively say, rho = .1 or rho != .1 which is true or not (even if the test statistic = -.8,than .1 is not in the 90% CI and we still H0, even though its in the opposite direction.)
+
+with PBF we use inequality restrictions, because an equality restriction is too specific and is almost always an inferior hypothesis.
+With PBF we check if rho > .1 or rho <= .1, this means that if rho = -.8, we accept Hc and not Hi.
+It is thus hard to compare the RMA/IPD and PBF decisions to reject or accept H0.
+
+if rho = .1 and Rho = .1, than rejecting H0 is wrong. 
+if rho = .2, and Rho = .1 than we must reject H0. -->
 
 
 # Tutorial
