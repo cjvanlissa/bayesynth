@@ -1,5 +1,5 @@
 ---
-title             : "Tutorial: Aggregate evidence from heterogeneous replication studies using the product Bayes factor"
+title             : "Aggregating evidence from conceptual replication studies using the product Bayes factor"
 shorttitle        : "PRODUCT BAYES FACTOR"
 
 author:
@@ -19,27 +19,32 @@ author:
       - Writing – original draft
       - Writing – review & editing
   - name: "Eli-Boaz Clapper"
-    affiliation: "1"
+    affiliation: "2"
     role:
       - Formal Analysis
       - Writing – original draft
       - Writing – review & editing
+  - name: "Rebecca Kuiper"
+    affiliation: "2"
+    role:
+      - Conceptualization
+      - Writing – review & editing
 affiliation:
   - id            : "1"
-    institution   : "Utrecht University, dept. Methodology & Statistics"
+    institution   : "Tilburg University, dept. Methodology & Statistics"
   - id            : "2"
-    institution   : "Open Science Community Utrecht"
+    institution   : "Utrecht University, dept. Methodology & Statistics"
 
 authornote: |
   This is a preprint paper, generated from Git Commit # `r substr(gert::git_commit_id(),1,7)`. This work was funded by a NWO Veni Grant (NWO Grant Number VI.Veni.191G.090), awarded to the lead author.
 
 abstract: |
-  TODO
+  The product Bayes factor (PBF) can synthesize evidence in favor of an informative hypothesis across heterogeneous replication studies. It is particularly useful when the number of studies is relatively low and conventional assumptions about between-studies heterogeneity are likely violated. The present paper introduces a user-friendly implementation of the PBF in the bain R-package, and demonstrates its use in several tutorial examples. The method was validated in a simulation study that manipulated sample size, number of replication samples, and reliability. PBF had a higher overall accuracy when benchmarked against other evidence synthesis methods, including random-effects meta-analysis (RMA). This was primarily due to PBF’s greater sensitivity in detecting a true effect. However, PBF had relatively lower specificity. The PBF showed increasing sensitivity and specificity with increasing sample size. With an increasing number of samples, lower sensitivity was traded for greater specificity. Although PBF's overall performance was less susceptible to reliability than the other algorithms, this masked a trade-off between reliability and specificity. PBF thus appears to be a promising method for meta-analysis of heterogeneous conceptual replication studies. Nonetheless, users should be aware of its lower specificity, and the fact that it takes a Bayesian approach to inference and addresses a qualitatively different research question than other evidence synthesis methods.
   
 keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
 wordcount         : "5356"
 
-bibliography      : ["product_bayes.bib"]
+bibliography      : ["product_bayes.bib", "references.bib"]
 
 floatsintext      : no
 figurelist        : no
@@ -56,12 +61,14 @@ output            : papaja::apa6_pdf
 ---
 
 ```{r setup, include = FALSE}
-run_everything <- FALSE
+run_everything <- TRUE
 library("papaja")
 library(tidySEM)
 library(kableExtra)
 library(pwr)
+library(bain)
 r_refs("r-references.bib")
+source("UI function/pbf.R")
 out <- readRDS("out.RData")
 ```
 
@@ -72,51 +79,71 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
 ```
 
 Recent years have seen a crisis of confidence over the reliability of published results in psychology, and science more broadly [@brembs2018prestigious].
-Replication research has come into focus as a solution to this crisis and as a way to derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021]. 
-<!--For many, highly regarded published studies however, results could not be replicated [@brembs2018prestigious].-->
-<!--A lack of validating replication research partly strengthened the belief that single studies results should solely be viewed as part of many studies studying the same research question [@asendorpf2016recommendations]. -->
-<!--Evidence over multiple studies must be aggregated to derive more reliable conclusions and within this paradigm, research synthesis methods have blossomed [@shadish2015meta; @nakagawa2019research].-->
+Replication research has emerged as one potential way to address this crisis and derive knowledge that will stand the test of time [see @lavelleWhenCrisisBecomes2021]. 
 In step with this interest in replication research,
-research synthesis methods have blossomed [REF].
-These methods aggregate the findings of multiple studies,
-and thus enable drawing overarching conclusions across multiple studies.
-The present paper focuses on quantitative methods for research synthesis [e.g., @vanlissaSelectRelevantModerators2021], although qualitative [e.g., @vanlissaMappingPhenomenaRelevant2021] research synthesis methods also exist. 
+research synthesis methods have become increasingly popular.
+These methods aggregate research findings,
+and thus enable drawing overarching conclusions across multiple (replication) studies.
+In this paper, we introduce a new research synthesis method that uses Bayesian evidence synthesis to aggregate the evidence in favor of an informative hypothesis, quantified by the Bayes factor,
+across multiple studies.
+This method has the potential to provide a more comprehensive and accurate picture of the state of the literature, and to identify areas of consensus and disagreement among studies.
+We describe the method in detail and demonstrate its application through a tutorial example analysis.
 
 A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009].
-Heterogeneity appears when, for example, studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations.
+When studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations, these between-study differences can introduce heterogeneity in findings.
 The most common quantitative research synthesis method is meta-analysis,
 in which results of different studies are aggregated to estimate an aggregate effect size [@borensteinIntroductionMetaAnalysis2009].
 In meta-analysis, heterogeneity can be accounted for in four ways [see @vanlissaSmallSampleMetaanalyses2020].
-First, if studies are exact replications, one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
-Second, when heterogeneity between studies can be assumed to be because of random measurement error, random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
+First, if studies are exact replications,
+one may assume that no heterogeneity in the outcome exists and a fixed-effect meta-analysis can be conducted to estimate the common population effect. 
+Second, when heterogeneity between studies can be assumed to be random,
+random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
 Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
-Finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators. 
-Each of these approaches require making different assumptions about the nature of heterogeneity [see "Models for meta-analysis" in @vanlissaSmallSampleMetaanalyses2020].
+Finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators [@vanlissaSelectRelevantModerators2021].
+However, accounting for moderators requires a relatively high number of observations per moderator,
+which may not be available.
+Each of these approaches thus makes different assumptions about the nature of heterogeneity [see "Models for meta-analysis" in @vanlissaSmallSampleMetaanalyses2020].
 
-An alternative approach for evidence synthesis that does not impose assumptions about heterogeneity is Bayesian evidence synthesis (BES) [@kuiperCombiningStatisticalEvidence2013]. 
-Instead of aggregating effect sizes, BES aggregates the evidence in favor of an informative hypothesis $H_i$ across studies.
-The amount of evidence for this hypothesis is expressed as a Bayes factor, BF.
-A Bayes factor can be interpreted as the ratio of evidence in favor of one hypothesis $H_1$ relative to another hypothesis $H_2$, so $BF_{12} = \frac{H_1}{H_2}$.
-For the purpose of this paper, we will assume that all Bayes factors are the Bayes factors of an informative hypothesis $H_i$ against its complement $H_{!i}$, $BF_{c} = \frac{H_i}{H_!i}$. 
-In this context, the subscript $_!$ represents the negation operator; in other words, $H_{!i}$ means "not $H_i$".
+A crucial shortcoming of existing research synthesis methods is that the aforementioned assumptions
+may not be tenable when meta-analyzing studies that investigate the same informative hypothesis,
+but are otherwise very heterogeneous.
+The situation may arise where each study is uniquely identified by a combination of linearly dependent moderators.
+In this case, it is no longer possible to synthesize *effect sizes* while accounting for heterogeneity using statistical methods.
+<!-- even machine learning based methods cannot identify relevant moderators. -->
+It is still possible, however, to quantify the support these studs provide for the underlying informative hypothesis.
+To this end, Bayesian evidence synthesis (BES) aggregates the evidence in favor of an informative hypothesis $H_i$ across studies,
+without imposing assumptions about heterogeneity [@kuiperCombiningStatisticalEvidence2013].
+
+The amount of evidence for a hypothesis can be expressed as a Bayes factor, or BF.
+The BF can be interpreted as the ratio of evidence in favor of one hypothesis $H_1$ relative to another hypothesis $H_2$, so $BF_{12} = \frac{H_1}{H_2}$.
+Within the scope of this paper,
+all Bayes factors are the ratio of evidence in favor of an informative hypothesis $H_i$ relative to its complement $H_{!i}$, $BF_{c} = \frac{H_i}{H_!i}$. 
+The subscript $_!$ represents the negation operator;
+in other words, $H_{!i}$ means "not $H_i$".
 Consequently, $BF_c$ represents the ratio of evidence in favor of $H_i$ divided by evidence against it.
-Thus, BF = 10 means that the data provide ten times more support in favor of the hypothesis than against it.
+A value of $BF_c = 10$ means that the data provide ten times more support in favor of the hypothesis than against it.
+
 When multiple studies each provide evidence for $H_i$ in the form of complement Bayes factors,
-these Bayes factors can be synthesized across studies by taking their product.
+these Bayes factors can be synthesized across studies by taking their product [@kuiperCombiningStatisticalEvidence2013].
 The resulting product Bayes factor (PBF) summarizes the total evidence for the hypothesis.
-Note that other approaches to BES exist [see "Bayesian Evidence Synthesis" in @heckReviewApplicationsBayes2022].
-The only assumption of BES is that all study-specific hypotheses provide evidence about the same underlying theoretical relationship.
+The only assumption of the PBF is that all study-specific hypotheses provide evidence about the same underlying theoretical relationship.
+Note that other approaches to BES exist;
+for instance, it is possible to use the posterior of one study as the prior for a replication study, and thus accumulate evidence across studies [see @heckReviewApplicationsBayes2022].
+Such applications are out of scope of the present paper,
+which addresses the PBF approach to BES.
 
 Although meta-analysis and BES are both research synthesis methods, they answer different research questions.
-Meta-analysis estimates the value or distribution of a population effect size. 
+Meta-analysis estimates the point estimate or distribution of a population effect size. 
 It pools estimates of this effect size across multiple studies to obtain an overall estimate of the effect size.
-It thus answers the question: Given certain assumptions about between-studies heterogeneity, what is the average population effect size?
+It thus answers questions like:
+Given certain assumptions about between-studies heterogeneity, what is the average population effect size?
 BES, on the other hand, aggregates evidence in favor of an informative hypothesis across multiple studies.
-It thus answers the question: Do all these studies support the informative hypothesis?
-Both methods thus provide complementary information.
+It thus answers the question: Do all these studies support the hypothesis of interest?
+Both methods are appropriate for different research questions, and provide complementary information.
 
-This tutorial paper introduces the first implementation of BES in useruse-friendly open source software.
-A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `r as.character(packageVersion("bain"))`.
+This paper introduces the first implementation of BES in user-friendly free open source software (FOSS).
+A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `0.2.9`.
+<!-- `r as.character(packageVersion("bain"))`. -->
 This paper presents a simulation study to validate the method and benchmark it against alternative evidence synthesis methods,
 and illustrates several use cases through reproducible examples.
 
@@ -128,15 +155,9 @@ and illustrates several use cases through reproducible examples.
 <!-- Dus bijv: -->
 <!-- In de populatie zijn er twee variabelen, die cooreleren met de waarde rho. We hebben k studies die elk een sample van n hebben getrokken/verzameld. Dan vertelen wat de verschillende algrotithms doen met de verschillende samples (meeste als niet alle: In elke sample wordt de sample correlatie bepaald; dan estimates samenemen en null hypo test of in each sample bewijs voor hypo en dat samennemen). Dan iets over de verschillende waardes die je bekijkt en dat elke combi een simulatie conditie is. En dan iets als: Dit doen we 1000 keer per set van condities.  -->
 <!-- En dan nog iets over reliability ook. -->
-The present simulation study set out to validate the PBF algorithm.
-For each iteration of the simulation, we simulated a correlation coefficient in multiple samples.
-<!-- CJ: Hier staat multiple samples; elders multiple groups / studies / etc. Kan je die terminologie gelijktrekken? -->
-The informative hypothesis was kept constant at $H_i: \rho > .1$.
-All simulation conditions were evaluated once in the presence of a true population effect,
-defined as $\rho = .2$,
-and once in the presence of a null effect, defined as $\rho = .1$.
-A PBF > 3 was used as a decision criterion to conclude that $H_i$ was supported over its complement.
-This threshold is subjective but rooted in conventional standards for interpreting Bayes factors [@jeffreys1998theory].
+The present simulation study set out to validate the PBF algorithm and benchmark it against other evidence synthesis methods.
+We simulated a scenario where an informative hypothesis about a correlation between two variables was measured across several independent samples,
+and the resulting evidence was synthesized across samples using multiple methods.
 <!-- Rebecca: -->
 <!-- waar is > 3 op gebaseerd? -->
 <!-- Kass&Raftery? Als ja, bedenk wel dat dat om equaility restricties gaat (bij mijn weten). Je kan het natuurlijk gebruiken, maar plaats dan wel de kanttekening, maar is een uitgangspunt natuurlijk.  -->
@@ -151,50 +172,71 @@ This threshold is subjective but rooted in conventional standards for interpreti
 <!-- In your simulation, you use PBF > 3, so this may be hard to reach when the truth is on the border, but that is due to the subjective choice of 3... -->
 <!-- So, I already thought that using a smaller population rho value would be of added value, but now I believe you should really include this. -->
 <!-- I do see that this would end up in multiple results (once using .1 and 0.2, once (say) 0 or 0.05 and .2; but also when using other cut-off values for PBF). -->
-To examine performance in a range of realistic scenarios,
-several design factors were manipulated:
-The number of observations per sample $n \in (50, 200, 500, 800)$,
-which (assuming a known effect of $\rho = .1$) provides statistical power to reject a false null hypothesis at $\alpha = .05$ of
-$(`r paste0(formatC(pwr.r.test(c(50, 200, 500, 800), .1)$power, digits = 2, format=  "f"), collapse = ", ")`)$, respectively.
-the number of samples $k \in (2, 3, 10)$, where 2 is the minimum number of samples possible and 10 is a relatively large number, considering that replications are not very common.
-The reliability of the two correlated variables, $\alpha \in (0.6, 0.8, 1.0)$, where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is
+The informative hypothesis was kept constant at $H_i: \rho > .1$.
+To examine the performance of the different evidence synthesis methods in a range of scenarios,
+several design factors were manipulated.
+First was the presence or absence of a true population effect.
+A present effect was defined as $\rho = .2$;
+a null effect was defined as $\rho = .1$.
+The second design factor was the number of observations per sample $n \in (50, 200, 500, 800)$.
+These values were chosen because they correspond to a statistical
+<!-- pwr.r.test(c(50, 200, 500, 800), .1) -->
+power to reject a false null hypothesis of $\beta \in (.10, .30, .60, .80)$ power, respectively,
+assuming $\alpha = .05$ and a known effect size of $\rho = .1$.
+Third, we manipulated the number of independent samples (or: replication studies), $k \in (2, 3, 10)$.
+Fourth, the reliability of the two correlated variables was varied between $\alpha \in (0.6, 0.8, 1.0)$,
+where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is
 assumed when analyzing correlations between observed items or scale scores.
-For all unique combinations of the design factors, 1000 data sets were generated.
+For all unique combinations of these design factors,
+the simulation was repeated 1000 times.
 
 ## Algorithms
 
 The main algorithm of interest was the PBF.
+As a decision criterion to conclude that $H_i$ was supported over its complement,
+we used $PBF > 3$ - a conventional threshold for inference using Bayes factors [@jeffreys1998theory].
+
 As a benchmark for comparison, we included several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
-The first was vote counting: counting the number of significant effects.
-Although this method is in use for aggregating conceptual replications,
-it should not be considered good practice.
+The first was *vote counting*: counting the number of significant effects.
+Although this method is still in use for aggregating conceptual replications,
+it is considered bad practice.
 Three disadvantages are that vote counting disregards sample size,
 reduces statistical power,
-and does not quantify the strength of the evidence [(Scheerens, 2015):].
-Our vote counting algorithm used one-sided z-tests to examine whether a null hypothesis corresponding to the informative hypothesis was rejected in the majority of samples, i.e.: $H_0: \rho = .1$, and $H_a: \rho > .1$, which corresponds to $H_i$.
+and does not quantify the strength of the evidence [@hedgesVotecountingMethodsResearch1980].
+Our vote counting algorithm summed the number of one-sided z-tests of a null hypothesis corresponding to the informative hypothesis,
+so $H_0: \rho = .1$ and $H_a: \rho > .1$, which corresponds to $H_i$.
+The decision criterion was that the hypothesis was supported in the majority of samples.
 Thus, for example, if $H_a$ was supported in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extension, $H_i$).
-The second was a random-effects meta-analysis (RMA), which is the standard in the field.
-For this algorithm, the null-hypothesis was rejected if a 90% confidence interval for the overall effect size excluded $H_0$.
-The third algorithm was individual participant data (IPD) meta-analysis.
-Like classic meta-analysis, IPD is a multilevel model, clustered by sample.
-In contrast to classic meta-analysis, IPD freely estimates variance at the first level, because raw data are available.
-The PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
-It is thus informative to compare the PBF to both these methods.
-IPD was also evaluated using a 90% confidence interval for the overall effect size.
+
+The third algorithm was *random-effects meta-analysis* (RMA),
+which is the current gold standard for evidence synthesis [@viechtbauerConductingMetaanalysesMetafor2010].
+For this algorithm, the null-hypothesis was rejected if the lower bound of a 90% confidence interval for the overall effect size excluded $H_i$.
+Note that this corresponds to a test at $\alpha = .05$,
+because all effects in the simulation are directional.
+
+The fourth algorithm was *individual participant data* (IPD) meta-analysis [@rileyMetaanalysisIndividualParticipant2010].
+Like classic meta-analysis (RMA), IPD is a multilevel model, clustered by sample.
+IPD uses the raw data, which makes it possible to estimate variance at the first level.
+By contrast, RMA treats the first-level variance as known.
+Note that the PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
+With this in mind, it is informative to benchmark it against both of these methods.
+IPD was also evaluated using the lower bound of a 90% confidence interval for the overall effect size.
 <!-- Rebecca: -->
 <!-- zou je dit vooraf moeten zeggen? -->
 <!-- Dan zeggen dat ILP dit ook kan en dan zeggen dus dat ook als vergelijking meenemen? -->
 <!-- Ms zelfs in intro dit al noemoen, dan zeggen dat er twee meta-an equivalenten zijn, waarin je null hypo testing kan doen. En we dat gaan meenemen om te vergelijken. -->
 
-
 ## Performance indicators
 
 For each algorithm, inferential decisions made using the criteria described above were compared to the population status of the hypothesis (true or false).
-This results in a so-called "confusion matrix",
-which gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
-These quantities were summarized as sensitivity, ${TP}{TP + FN}$, the probability of making the inferential decision that the informative hypothesis is supported, given that it was indeed true in the population, <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
+The resulting confusion matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
+These quantities were summarized as sensitivity, $\frac{TP}{TP + FN}$,
+the ability to detect an effect given that it was indeed true in the population,
+<!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
 <!--CJ: This is all the same, see https://en.wikipedia.org/wiki/Sensitivity_and_specificity -->
-and specificity, $\frac{TN}{TN+FP}$, the probability of concluding the informative hypothesis is not supported, given that it was indeed false in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
+and specificity, $\frac{TN}{TN+FP}$,
+the ability to correctly conclude that the informative hypothesis is not supported,
+given that it was indeed false in the population. <!-- and specificity is the ability to not acknowledge an effect, given that there indeed is none-->
 The overall performance was captured by the accuracy, which represents the total proportion of correct (true positive and true negative) decisions, $\frac{TP + TN}{TP+TN+FP+FN}$.
 
 ```{r, echo = F}
@@ -219,18 +261,15 @@ rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
 ```
 First, we examined overall model performance across conditions.
-Recall that sensitivity is the probability of concluding that the informative hypothesis is supported, given that it was indeed true in the population,
-and specificity, is the probability of concluding that it is not supported, given that it was false in the population.
-The results indicate that all algorithms except PBF had low sensitivity to detect a true effect.
-In contrast, specificity was very high for all algorithms except PBF.
-This suggests that the other algorithms classified most conditions as negatives (no effect found),
-regardless of the existence of a population effect.
-The PBF trades a loss of specificity for increased sensitivity.
-At the same time, the average specificity and sensitivity were approximately equal, see Table \@ref(tab:tabconf).
+PBF had a higher overall accuracy than other algorithms
+followed by IPD, then RMA and finally VC,
+see Table \@ref(tab:tabconf).
+This higher accuracy was primarily driven by PBF's greater sensitivity to detect a true effect compared to other algorithms.
+However, PBF had a lower specificity compared to all other algorithms.
+This suggests that the PBF trades a loss of specificity for increased sensitivity.
 
 ## Effect of simulation conditions
 
-We examined the effect of simulation conditions on overall accuracy.
 ```{r tabeffect, echo = FALSE}
 tab <- read.csv("effect_of_conditions.csv", stringsAsFactors = FALSE)
 tab <- tab[, !grepl("(gpbf|tbf)", names(tab))]
@@ -238,16 +277,20 @@ tab <- tab[, grepl("^\\w+$", names(tab)) | (grepl("\\.{2}", names(tab)) & grepl(
 names(tab)[grepl("\\.{2}", names(tab))] <- paste0("vs ", gsub("(\\.|PBF|vs)", "", names(tab)[grepl("\\.{2}", names(tab))]))
 knitr::kable(tab, digits = 2, caption = "Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).")
 ```
-PBF performance was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
-<!-- Rebecca: Nu niet compleet? -->
-<!-- Gek om steeds ene paragraaf van 1 zin te hebben iig. -->
-<!-- Verder mist er denk ik info. Ik zou graag eerst meer uitleg zien. Hoe heb je dat examine, wat ga je laten zien (niet het resultaat an sich, snap je wat ik bedoel...). -->
-<!-- Verder zou ik denk ik niet hier al weggeven wat je hierna gaat laten zien (en anders dat explicieteren dat dat is wat je doet). -->
-
+We used ANOVAs to examine the effect of simulation conditions on overall accuracy.
+The differences between algorithms were analyzed in analyses that included two-way interactions between design factors and algorithm.
+As the sample size was very large,
+significance tests were uninformative.
+We thus focused on interpreting the effect size of the effects of design factors.
+The performance of PBF was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
+The differences in the effects of sample size and number of groups were relatively small between PBF and the two best practice algorithms, RMA and IPD -
+but substantial between PBF and the suboptimal VC algorithm.
+The reverse pattern occurred for reliability, however:
+it showed a substantial difference in effect between PBF and the two best practice algorithms only.
 
 ### Effect of sample size
 
-```{r fign, fig.cap="Mean performance by sample size"}
+```{r}
 res <- readRDS("confusion_by_cond.RData")
 
 df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
@@ -256,231 +299,254 @@ df_plot <- as.data.frame(df_plot)
 df_plot <- aggregate(df_plot$val, df_plot[c("n", "Outcome", "alg")], FUN=mean)
 names(df_plot)[ncol(df_plot)] <- "mean"
 # df_plot <- df_plot[ ,list(mean=mean(val)), by=c("n", "Outcome", "alg")]
-ggplot(df_plot, aes(x = n, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+library(ggplot2)
+p <- ggplot(df_plot, aes(x = n, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
+  scale_linetype(guide = guide_legend(reverse = TRUE) )+
   theme_bw() +
-  labs(y = "Mean performance", x = "Sample size")
+  labs(y = "Mean performance", x = "Sample size")+
+  labs(shape = "Algorithm")
+ggsave("sample_size.pdf", p, device = "pdf", width = 140, height = 100, units = "mm")
+```
+```{r fign, fig.cap="Mean performance by sample size"}
+knitr::include_graphics("sample_size.pdf")
 ```
 
-Figure \@ref(fig:fign) indicates that for PBF, both sensitivity and specificity increase with sample size.
-The other algorithms also show increasing sensitivity, but not specificity, which is at a ceiling.
-This difference explains the effect of reliability on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Figure \@ref(fig:fign) indicates that for PBF, both sensitivity and specificity increased with sample size.
+The other algorithms showed only increasing sensitivity; 
+specificity was limited by a ceiling effect.
+This difference explains the effect of sample size on the difference between algorithms (see Table \@ref(tab:tabeffect)).
 
-### Effect of number of groups
+### Effect of number of samples
 
-```{r, fig.cap="Mean performance by number of groups"}
+```{r}
 df_plot <- data.table::melt(res, measure.vars = c("sensitivity", "specificity"),
              variable.name = "Outcome", value.name = "val")
 # df_plot <- df_plot[ ,list(mean=mean(val)), by=c("k", "Outcome", "alg")]
 df_plot <- as.data.frame(df_plot)
 df_plot <- aggregate(df_plot$val, df_plot[c("k", "Outcome", "alg")], FUN=mean)
 names(df_plot)[ncol(df_plot)] <- "mean"
-ggplot(df_plot, aes(x = k, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+p <- ggplot(df_plot, aes(x = k, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
+  scale_linetype(guide = guide_legend(reverse = TRUE) )+
   theme_bw() +
-  labs(y = "Mean performance", x = "Number of groups")
+  labs(y = "Mean performance", x = "Number of groups")+
+  labs(shape = "Algorithm")
+ggsave("groups.pdf", p, device = "pdf", width = 140, height = 100, units = "mm")
 ```
-The figure indicates that, for PBF at higher levels of k, lower sensitivity is exchanged for greater specificity.
-The other algorithms do not show this pattern, as their specificity is at a ceiling.
-This difference in pattern of effects explains why number of groups has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
-Only VC shows decreasing sensitivity with an increasing number of groups;
-this is because the probability of obtaining any false negatives increases with the number of groups.
+```{r figk, fig.cap="Mean performance by number of groups"}
+knitr::include_graphics("groups.pdf")
+```
 
+The figure indicates that, for PBF at higher levels of $k$,
+lower sensitivity was traded for greater specificity.
+The other algorithms did not show this pattern, as their specificity was at a ceiling.
+This difference in pattern of effects explains why number of samples had a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Only VC showed decreasing sensitivity with an increasing number of groups;
+this is because the probability of obtaining false negatives increases with the number of groups [as also noted by @hedgesVotecountingMethodsResearch1980].
 
 ### Effect of reliability
 
 <!--EB: I think reliability plot is a bit confusing (The one that is saved under ./manuscript_files/figure-latex/unnamed-chunk-3-1.png). That is because the x-axis is labeled 'reliability', but the values are the values of the 'errorsd' condition. This makes that the reliability decreases, rather than increases as you move away from the origin on the x-axis -->
-```{r, fig.cap="Mean performance by reliability"}
+```{r}
 df_plot <- melt(res, measure.vars = c("sensitivity", "specificity"),
              variable.name = "Outcome", value.name = "val")
+df_plot$reliability[df_plot$reliability == 0] <- 1
+df_plot$reliability[df_plot$reliability == .5] <- .8
+df_plot$reliability[df_plot$reliability == .81] <- .6
+
 # df_plot <- df_plot[ ,list(mean=mean(val)), by=c("reliability", "Outcome", "alg")]
 df_plot <- as.data.frame(df_plot)
 df_plot <- aggregate(df_plot$val, df_plot[c("reliability", "Outcome", "alg")], FUN=mean)
 names(df_plot)[ncol(df_plot)] <- "mean"
-ggplot(df_plot, aes(x = reliability, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
+p <- ggplot(df_plot, aes(x = reliability, y = mean, group = interaction(Outcome, alg), shape = alg, linetype = Outcome)) +
   geom_point() +
   geom_line() +
+  scale_linetype(guide = guide_legend(reverse = TRUE) )+
   theme_bw() +
-  labs(y = "Mean performance", x = "Reliability")
+  labs(y = "Mean performance", x = "Reliability")+
+  labs(shape = "Algorithm")
+ggsave("reliability.pdf", p, device = "pdf", width = 140, height = 100, units = "mm")
+```
+```{r figrel, fig.cap="Mean performance by reliability"}
+knitr::include_graphics("reliability.pdf")
 ```
 
-The figure indicates that for PBF, at higher reliability, lower sensitivity is exchanged for greater specificity.
-The other algorithms do not show this pattern, as their specificity is at a ceiling.
-Their sensitivity decreases with lower reliability,
-and therefore, so does their overall performance.
-This difference in pattern of effects explains why reliability has a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
-Note that, in contrast to other algorithms, the performance of PBF is less susceptible to reliability.
-
+Figure \@ref(fig:figrel) indicates that the PBF traded sensitivity for specificity.
+At low levels of reliability, specificity exceeded sensitivity;
+at high levels of reliability, this pattern was reversed.
+The other algorithms did not show this pattern, as their specificity was at a ceiling.
+Their sensitivity increased with higher reliability, however,
+and therefore, so did their overall performance.
+This difference in pattern of effects explains why reliability had a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Note that, whereas the overall accuracy of the PBF was found to be less susceptible to reliability as compared to other algorithms,
+this finding masked the trade-off between reliability and specificity.
 
 # Discussion
 
-This simulation study validated the product Bayes factor as an alternative or complementary method to synthesize evidence across studies.
-The PBF was benchmarked against other common methods for evidence synthesis.
-This was done by calculating a correlation coefficient and determining the accuracy, sensitivity and specificity as metrics of performance for the methods in different plausible varying conditions.
-During the simulation, the hypotheses that were tested remained constant $H_i: \rho > .1$, $H_0: \rho = .1$.
-To be able to calculate the performance metrics, half of the simulated conditions contained an effect, $\rho = .2$, while the other half did not, $\rho = .1$.
-<!-- EB: Why did we not use H0:r=0 and Hi:r>0 as constant hypotheses? It seems more intuitive -->
-Sensitivity and specificity can be interpreted as Type I error rate and statistical power respectively and are used interchangeably.
- <!-- Because Type 1 error rate and power seem to be key terms in the discussion, we may be able to include it in the introduction: 'How does the PBF compare to other state-of-the-art algorithms with regards to Type 1 error rate, power and overall accuracy?' -->
-The effect of sample size per study, number of studies to synthesize evidence over and reliability of measurement on the performance of the algorithms was investigated.
+This simulation study examined the performance of the product Bayes factor (PBF) as compared against three other common methods for evidence synthesis (IPD, RMA, and VC).
+The results showed that PBF had a higher overall accuracy than the other algorithms,
+primarily due to its greater sensitivity to detect a true effect.
+PBF had lower specificity, however,
+suggesting that it trades specificity for increased sensitivity.
+<!-- PBF's performance was most impacted by sample size, both in terms of sensitivity and specificity. The other algorithms showed less improvement in accuracy with increasing sample size due to a ceiling effect for specificity. -->
+<!-- The number of groups also had a moderate effect on PBF's performance, -->
+<!-- increasing sensitivity while specificity remained approximately stable. -->
+<!-- Reliability had a moderate effect on the performance of all algorithms, with overall performance increasing as reliability increased. -->
+<!-- However, the effect of reliability on PBF was different than the other algorithms, as PBF traded increasing sensitivity for decreasing specificity as reliability increased, -->
+<!-- whereas the other algorithms showed only an increase in sensitivity and approximately stable specificity. -->
+PBF's performance was most impacted by sample size,
+followed by the number of groups and reliability.
+Even at the smallest sample size of $n = 20$,
+PBF had a superior sensitivity to the other algorithms.
+This suggests that PBF is more suitable than other methods as a small sample solution.
+When the number of samples increased,
+most algorithms showed approximately stable specificity
+and increasing sensitivity.
+A notable exception was vote counting;
+its sensitivity decreased with an increasing number of samples,
+as has been previously documented [@hedgesVotecountingMethodsResearch1980].
+With increasing reliability,
+PBF showed a substantially different pattern of results than the two other best practice algorithms (RMA and IPD).
+Although the overall effect of reliability on overall accuracy was smaller for PBF than for other algorithms,
+this masks a trade-off between reliability and specificity.
+Whereas most algorithms showed near-stable specificity and increasing sensitivity,
+PBF showed a clear trade-off between decreasing specificity and increasing sensitivity.
+This implies that the PBF is more conservative - less likely to detect an effect - in the presence of increasing measurement error.
 
-The overall performance of the PBF increased most with increasing sample size.
- <!-- EB: also, shall we rename 'performance' to 'accuracy', I know its not the same, but performance seems a bit too subjective. After all, we do not have a clear cut decision when sensitivity and specificity is balanced 'correctly' --> 
-PBF's sensitivity was .57 when a sample size of 20 per sample was simulated, while for all other algorithms this was below .11.
-It should be noted that in the condition where sensitivity could be calculated, the true effect $\rho$ was .2 and only .1 points above the boundary value for $H_i > .1$ and $H_0 = .1$.
-It is no surprise that at smaller samples the small difference in effect size between null/informative hypothesis and true value of .1 is unlikely to be detected.
-Still, even at a relatively large sample size of 500 per sample, the sensitivity of the other algorithms only rose slightly above .60, 
-while for PBF this was .90.
-This provides evidence that state-of-the-art evidence synthesis methods have little power to detect a true, but small effect,
-even when the sample size per sample was substantial.
-PBF on the other hand presents itself as a small sample size solution for evidence synthesis methods to detect true effects,
-even if the effect itself can be considered small.
-This is also reflected in the accuracy of the algorithms at small sample sizes, which, at a sample size of 20, was around .50 for RMA, IPD and VC.
-This can be attributed to their low sensitivity and their specificity that is at ceiling level. 
-By consistently not finding an effect, the algorithms are correct 50\% of the time.
-At all sample sizes, the PBF was the most accurate algorithm,
-although it should be noted that even at a sample size of 500, PBFs specificity was .12 percentage points too high for conventional acceptable type I error rates of .05.
+These results have important implications for applied evidence synthesis.
+For example, the finding that PBF had a higher overall accuracy due to greater sensitivity suggests that it may be a better choice than the other algorithms,
+particularly when detecting true effects has high priority.
+However, researchers should be aware that this increased sensitivity comes at a loss of specificity,
+which incurs a greater risk of false positive results.
+If specificity is a higher priority,
+other algorithms such as IPD or RMA may thus be more appropriate.
 
-With an increasing number of groups, slightly decreasing specificity was traded off for increasing sensitivity.<!--EB: I would argue that the decrease is negligible, 0.767 at k = 2, 0.763 at k = 10 -->
-With an increasing number of groups, specificity remained around .76-.77 for PBF, while sensitivity increased to .87.
-Again, the specificity remained at ceiling level for the other algorithms.
-The sensitivity for RMA and IPD increased, but stayed below .51.
-In a similar way, this supports the use of the PBF as a small sample size solution.
-In this case when there are little available studies to synthesize evidence over.
-It could be argued that when there are only 2 or 3 studies available to synthesize evidence over, that if a trade-off need be made, specificity is preferred over sensitivity.
-It seems unwise to more easily acknowledge an effect if there is little data available.
-However, the quality of the included studies should be considered before synthesizing evidence in any way.
-Moreover, when the researcher performs some form of evidence synthesis, then the ability of the method to find an effect is a necessary and fair component, even if little studies are available.
-<!--EB: for clarification: I mean to say that research should not be done if there is effectively no power to detect an effect anyway, because the outcome is in such a case practically pre-determined. -->
-Also, even with as much as ten available studies, PBF was the only algorithm that had a conventionally acceptable power.
+The present study also has some limitations.
+First, the simulation study makes specific assumptions that may not generalize to all real-world applications.
+A second important caveat is that most of the algorithms did not reach
+a level of sensitivity that is considered acceptable from a perspective of statistical power [i.e., greater than .80, @cohen2013statistical].
+PBF performed notably better than other algorithms,
+but its sensitivity still fell below .80 in many conditions.
+Low power increases the risk of false negatives,
+or failing to detect a true effect.
+One reason power was low is that,
+in conditions where a true effect was present,
+its value only exceeded the boundary value of the informative hypothesis by .1 points.
+Such small effects are hard to detect.
+All algorithms will likely perform better when the true effect is larger.
+The low sensitivity of all algorithms highlights the importance of reticence when interpreting evidence syntheses of studies with small samples and small effect sizes.
+It may be prudent to avoid generalizing such results to the population,
+and instead consider them as merely descriptive of the published research.
+Additionally, sensitivity analyses can be used to assess the robustness of the results to different modeling assumptions and methods.
 
-With increasing reliability, increasing specificity was traded off for decreasing sensitivity for PBF. <!--EB: I think its the other way around; with DECREASING reliability, specificity increases and sensitivity decreases, see my comment at the section: 'Effect of reliability' -->
-With increasing reliability, decreasing specificity was traded off for increasing sensitivity for the PBF.
-Also for the other algorithms, the sensitivity increased as the reliability increased.
-It implies that the PBF gets more conservative whenever reliability decreases.
-This can be considered beneficial as the PBF is more hesitant to acknowledge an effect as the measurements become less stable.
-Even at the smallest acceptable reliability, $\alpha = .6$, PBFs sensitivity was .57, where it was below .10 for the other algorithms.
-However, the specificity of the PBF when there is perfect reliability $\alpha=1$ was .63, were it was almost 1 for the other algorithms.
+A third limitation is that the evidence synthesis methods compared here represent different approaches to inference and answer different research questions.
+<!-- Their inferential properties are thus not directly comparable. -->
+<!-- PBF assesses whether an informative hypothesis is supported across all replication studies; -->
+<!-- RMA estimates an average effect size from summary statistics; -->
+<!-- IPD estimates an effect size from individual data, accounting for clustering within studies; -->
+<!-- and VC counts the number of times a hypothesis was supported. -->
+Since each of these methods is optimized for a different purpose,
+the present study should not be considered as a comprehensive assessment of their strengths and weaknesses.
+<!-- For example, PBF takes a Bayesian approach to inference, and a PBF of 10 in our study means that the (subjective) probability that our informative hypothesis is true is ten times larger than the probability that it is not true. -->
+<!-- By contrast, IPD takes a frequentist approach to inference, -->
+<!-- and a p-value of $p = .02$ means that there is a 2% probability of observing an effect at least as large as the one found, if the null-hypothesis were true. -->
+We nonetheless compare them because of their similar usage in evidence synthesis.
+It is up to individual researchers to choose an appropriate method,
+guided by the research question and the available information.
+For instance, when raw data is unavailable, IPD cannot be used,
+and when effect sizes are not available, only VC can be used.
 
-Overall, there was only a single marginal condition where the accuracy of PBF was lower than that of any other algorithm.
-PBF scored 1-2 percentage points lower accuracy than IPD and RMA when there was perfect reliability.
-Looking at the specificity and sensitivity however, this is mostly explained by the specificity at ceiling level of RMA and IPD.
-Thus,
-Within the scope of this simulation, PBF had relatively better inferential properties <!-- EB: higher accuracy --> than the other algorithms under consideration.
-Although other algorithms had superior specificity, PBF had the highest levels of sensitivity.
-Thus, PBF balanced the ability to accept an informative hypothesis in the presence of a true population effect with the ability to reject the hypothesis when there was no effect.
+Aside from the aforementioned fact that the PBF answers a different research question than the other algorithms,
+it is worth noting limitations of the interpretation of the PBF.
+The PBF renders support for one specific informative hypothesis versus its complement.
+If the informative hypothesis is supported, this does not necessarily mean that it is also true.
+Consider the hypothetical example that a test of the informative hypothesis that the earth is flat received support with $BF = 3.01$.
+Although the data support this hypothesis over its complement, the hypothesis is clearly wrong (the earth is spherical).
+If we would have tested another hypothesis, e.g., the earth is shaped like an American football, it would have received much more support, e.g. $BF = 1000$, even though it is also wrong.
+A high Bayes factor thus does not mean that the hypothesis is true.
+Conversely, a low Bayes factor merely indicates that the informative hypothesis is not supported,
+and does not provide information about the true state of affairs.
 
-An important caveat is that none of the algorithms met conventional criteria for power (80%) and type I error (5%) [@cohen2013statistical].
-Overall, PBF had the best performance, with a power of 76% and type I error of 24%.
-Thus, if researchers intend to synthesize evidence for an informative hypothesis across heterogeneous studies, PBF may be the most suitable method - but its limitations <!-- higher probability for type 1 errors --> should be acknowledged in applied research.
+<!-- In sum, this simulation study suggest that PBF may be a good choice when sensitivity is of utmost importance, but researchers should be mindful of the trade-off between specificity and sensitivity. -->
+<!-- The results also highlight the importance of considering sample size, number of samples, -->
+<!-- and reliability when designing studies and conducting meta-analyses. Future research should examine the performance of additional algorithms and the impact of other design factors on algorithm performance. -->
+<!-- The results indicated that, compared to the other algorithms, -->
+<!-- PBF had a higher overall accuracy, -->
+<!-- which could be attributed to PBF's relatively greater sensitivity to detect a true effect. -->
+<!-- The greater sensitivity of PBF came at a loss of specificity compared to other algorithms. -->
+<!-- Specifically, all other algorithms showed ceiling effects for specificity and low base rates for sensitivity. -->
 
-Thus, the PBF can be used as a small sample size solution,
-although its increased type I error rate must be taken into account.
-It implies that PBF works best as a complementary method for evidence synthesis, rather than a replacement.
+<!-- The overall accuracy of the PBF was most affected by the sample size of the underlying studies. -->
+<!-- This effect was partly driven by the absence of a ceiling effect of specificity for the PBF, compared to the other algorithms. -->
+<!-- Increasing sample size increased sensitivity and specificity for all algorithms. -->
+<!-- Only for PBF, however, did sensitivity surpass specificity at large ($\geq 200$) sample sizes. -->
+<!-- Combined with the higher overall level of specificity, this suggests that PBF may be preferable when detecting true effects has high priority. -->
 
-
-<!-- Conventional threshold for type 1 error: 5% -->
-<!-- Conventional threshold for power: 80% -->
-<!-- J. Cohen, Statistical Power Analysis for the -->
-<!--  Behavioral Sciences, 2nd ed. (Erlbaum, Hillsdale, -->
-<!--  NJ, 1988). This is the source of the system of power -->
-<!--  analysis described here; the power values and sam -->
-<!--  ple sizes of the illustrations derive from this book's -->
-<!--  tables. -->
-<!--  2. J -->
-
-
-<!-- Rebecca: -->
-<!-- Ws niet een punt voor hier, maar wel in de discussie ofzo: -->
-<!-- It renders support for the hypothesis being the best in all studies. It, thus, does not render the support for the hypothesis being on average the best. -->
-
-<!-- EB: I assume Rebecca means that we should note that 'the hypothesis being on average the best' is the hypothesis that reflects the truth. While 'the hypothesis that is best in all studies' is the hypothesis that is closest to the truth compared to the other hypotheses that were tested. It does not say anything necessarily about whether the tested hypotheses in general are good reflections of the truth. E.g, if we only test whether the earth is either flat-shaped or triangular and not acknowledge other options, then we would incorrectly conclude that the earth is flat.-->
-The interpretation of the PBF should also be considered.
-The PBF renders support for some hypothesis being the best in all studies, but only compared to other hypotheses it has been tested against.
-This means that the tested hypothesis with most support is not necessarily the hypothesis that reflects the truth most closely.
-This is because there are many other plausible hypotheses that have not been tested.
-For example, testing whether the earth is flat or triangular excludes the possibility of a spherical earth.
-Still, because a Bayes factor is a continuous, real numbered quantity, it is more informative than the conclusion from a null-hypothesis significance test that only has the ability to dichotomously evaluate the null-hypothesis.
-The main benefit is the diversity of hypotheses that can be tested using the PBF.
-
-
-<!--Rebecca: Hier ook dan artikel van BEM noemen, maar ook zeggen dat het daar om null hypotheses gaat. -->
-
-<!--EB: dit refereert naar Rouder, J. N., & Morey, R. D. (2011). A Bayes factor meta-analysis of Bem’s ESP claim. Psychonomic Bulletin & Review, 18(4), 682-689.
-
-The argument from Rouder and Morey (2011) is that we cannot take the PBF as a valid measure for meta-analysis. They show that calculating the BF in multiple samples and taking their product results in a different PBF than when all data is pooled and the BF is calculated after pooling. They also show another way of calculating a meta-analytic BF and that this pooled BF comes closer to that meta-analytic BF. However, this calculation assumes a constant population effect and the use of the same type of statistical model across studies. Also, pooling the data assumes that all data is drawn from a common distribution. The idiosyncratic differences between studies makes that pooling data is not a straightforward endeavour, because of the heterogeneity of the effect. Rouder and Morey do acknowledge their choice for a constant effect to be debatable.
-
-Quote from the Rouder and Morey (2011) paper:
-"It is reasonable to wonder whether the constant effect
-size model underlying the meta-analytic Bayes factor is
-warranted. We chose this approach because it is tractable
-when researchers have access to the test statistics, rather
-than the raw data."
-
-Interesting statement. Intuitively I do not see how having only the test statistics compared to raw data makes the assumption of a constant effect more probable. After all, the test statistic is derived from the raw data...
-
-Rebecca noticed that Rouder and Morey specifically talk about PBF not being a good measurement in the context of testing H0, which is something that we are not doing. However, the only relevant difference I see in their vs our method is that their H0 contains a single equality constraint, while we used inequality constraints. Rouder and Morey do not explicitly point this difference out and I don't see how the PBF would be a bad or good idea depending on type of constraints. -->
-
-One possible issue with the PBF as defined in this research comes from an article of @rouder2011bayes. 
-The article states that a meta-analytic Bayes factor is not as straightforward as taking the product of $k$ individual Bayes factors.
-<!--EB: Their reason seems to be that Bayes factors take sample size into account, effectively reducing the ability of a Bayes factor to recognize an effect in small sample. I dont see how this invalidates the PBF. If there is an effect, then in 5 small studies, it may be true that a BF is calculated that barely support the hypothesis of an effect. However, taking the product of 5 BFs that are all 1.25 will result in a PBF of about 3.-->
-Rather, they provide a way of calculating more valid a meta-analytic Bayes factor.
-However, only under the assumption that the population effect is constant and the test statistic is from the same type of statistical model.
-Using this form of the PBF, they show that pooling the data and calculating a single Bayes factor on the pooled data comes closer to the meta-analytic Bayes factor than taking the product of each individual study.
-However, as stated earlier, one strength of the PBF lies in its ability to synthesize evidence for a hypothesis, rather than an estimate.
-This means that there is no assumption of a constant population effect and/or equal types of test statistics across studies.
-Furthermore, as the article of @rouder2011bayes states itself, pooling data is preferred if all data is independent and drawn from a common distribution. 
-The study idiosyncrasies encountered in evidence synthesis should wary the researcher in blindly making the assumption of a common distribution.
-
-<!-- Rebecca: -->
-<!-- ook iets zeggen over vergelijkbaarheid? -->
-<!-- Ws hierboven al iets over zeggen: -->
-<!-- In klassieke methoden heb je equality restrictie. -->
-<!-- Als rho = .1 dan null waar en moet je hem niet verwerpen, als .2 dan H0 niet waar en moet je H0 wel verwerpen. -->
-<!-- Bij BF heb je Hi en als .1 dan eigenlijk zelfs Hi waar, maar op border/boundary, dus ws dan BF = ong 1. Als .2 dan Hi waar en moet je BF > 1 vinden (evt dus > 3). -->
+<!-- <!-- Small samples -->
+<!-- At the smallest sample size of $n = 20$, the PBF had a better balance between sensitivity and specificity than the other algorithms. -->
+<!-- This suggests that PBF is more suitable than other methods as a small sample size solution for evidence synthesis. -->
 
 
-<!--EB: What I think Rebecca means here is the following: 
-In classical NHST, there is an equality restriction. we either do (r = .2) or do not (r = .1) reject H0. 
-Rejecting H0 means that the data suggests that rho != .1, but rather something else than .1 (so .2, .9, -.9 etc.)
-With RMA and IPD we effectively say, rho = .1 or rho != .1 which is true or not (even if the test statistic = -.8,than .1 is not in the 90% CI and we still reject  H0, even though the found effect is in the opposite direction of what we hypothesized.)
-
-with PBF we use inequality restrictions, because an equality restriction is too specific and is almost always an inferior hypothesis.
-With PBF we check if rho > .1 or rho <= .1, this means that if rho = -.8, we accept Hc and not Hi.
-It is thus hard to compare the RMA/IPD and PBF decisions to reject or accept H0.
-
-This would imply that there should be more cases where the frequentist methods acknowledge an effect. However, we see a very low sensitivity due to the small effect, so its not really a concern in this paper-->
-A final remark is that of performance comparison between PBF and the other algorithms which has to do with the differences in hypothesis specification. 
-For the frequentist and PBF algorithms we specified $H_0: \rho = .1$ and $H_c: \rho \leq .1$ respectively.
-This means, hypothetically, that if a strong effect in the opposite direction was found, let's say $\rho = -.6$, the frequentist algorithms would reject $H_0$ while the PBF would accept $H_c$.
-This implies that there should have been a higher power to detect an effect in the frequentist framework, as negative effects would reject $H_0$.
-This is contrary to what was observed in this research, however, as the frequentist approaches had a low sensitivity.
-Again, this has to do with the small simulated difference between the true effect and the boundary value.
+<!-- that increased with increasing sample size, number of samples, and reliability. -->
+<!-- PBF, by contrast, showed lower base rates of specificity and higher base rates of sensitivity. -->
 
 
+
+<!-- With increasing sample size, number of samples, and reliability, PBF showed a trade-off between decreasing specificity and increasing sensitivity. -->
+
+
+
+
+<!-- Overall, these results suggest that PBF had relatively better overall accuracy than the other algorithms under consideration. -->
+<!-- Although other algorithms had superior specificity, PBF had the highest levels of sensitivity. -->
+<!-- PBF thus traded off an increased ability to correctly accept informative hypotheses in the presence of true population effects for a decreased ability to reject the hypothesis when there was no effect. -->
+<!-- Users of the PBF should assess whether this trade-off is warranted. -->
+<!-- If it is not, more stringent criteria for inference or more conservative methods may be preferred. -->
+
+<!-- OTHER PBF APPROACHES -->
+<!-- One possible issue with the PBF as defined in this research comes from an article of @rouder2011bayes.  -->
+<!-- The article states that a meta-analytic Bayes factor is not as straightforward as taking the product of $k$ individual Bayes factors. -->
+<!-- <!--EB: Their reason seems to be that Bayes factors take sample size into account, effectively reducing the ability of a Bayes factor to recognize an effect in small sample. I dont see how this invalidates the PBF. If there is an effect, then in 5 small studies, it may be true that a BF is calculated that barely support the hypothesis of an effect. However, taking the product of 5 BFs that are all 1.25 will result in a PBF of about 3.-->
+<!-- Rather, they provide a way of calculating more valid a meta-analytic Bayes factor. -->
+<!-- However, only under the assumption that the population effect is constant and the test statistic is from the same type of statistical model. -->
+<!-- Using this form of the PBF, they show that pooling the data and calculating a single Bayes factor on the pooled data comes closer to the meta-analytic Bayes factor than taking the product of each individual study. -->
+<!-- However, as stated earlier, one strength of the PBF lies in its ability to synthesize evidence for a hypothesis, rather than an estimate. -->
+<!-- This means that there is no assumption of a constant population effect and/or equal types of test statistics across studies. -->
+<!-- Furthermore, as the article of @rouder2011bayes states itself, pooling data is preferred if all data is independent and drawn from a common distribution.  -->
+<!-- The study idiosyncrasies encountered in evidence synthesis should wary the researcher in blindly making the assumption of a common distribution. -->
+<!-- A final remark is that of performance comparison between PBF and the other algorithms which has to do with the differences in hypothesis specification.  -->
+<!-- For the frequentist and PBF algorithms we specified $H_0: \rho = .1$ and $H_c: \rho \leq .1$ respectively. -->
+<!-- This means, hypothetically, that if a strong effect in the opposite direction was found, let's say $\rho = -.6$, the frequentist algorithms would reject $H_0$ while the PBF would accept $H_c$. -->
+<!-- This implies that there should have been a higher power to detect an effect in the frequentist framework, as negative effects would reject $H_0$. -->
+<!-- This is contrary to what was observed in this research, however, as the frequentist approaches had a low sensitivity. -->
+<!-- Again, this has to do with the small simulated difference between the true effect and the boundary value. -->
 
 # Tutorial
 
-This tutorial about Bayesian Evidence Synthesis (BES) requires R-package `bain` version `r packageVersion('bain')` or later.
-This tutorial focusses on synthesizing evidence for an informative hypotheses using the Product Bayes Factor (pbf). 
-The data used to illustrate the method have been simulated based on the data presented in [@vanleeuwen2022morality].
-These simulated data are available in the `bain` package. 
-A more detailed description of the dataset is either provided in [@vanleeuwen2022morality] or by running `?bain::synthetic_us`, `?bain::synthetic_dk` or `?bain::synthetic_nl`.
-The research question is whether there is an association between political orientation and moral dispositions.
+This tutorial demonstrates how to synthesize evidence for an informative hypothesis across heterogeneous replications using the Product Bayes Factor (PBF). 
+We assume that users have installed the free open source statistical programming language R [@R-base].
+The R-package `bain` version `0.2.9` or later is required, which can be installed by running `install.packages("bain")` in the R console.
+The data used in this tutorial are included in the `bain` package,
+and have been simulated based on the data presented in [@vanleeuwen2022morality].
+A more detailed description of the datasets is found in [@vanleeuwen2022morality];
+additionally, the dataset documentation is accessed by running `?synthetic_us`, `?synthetic_dk` or `?synthetic_nl` in the R console.
+Van Leeuwen and colleagues conducted a theory-driven, preregistered study to address the research question whether political orientation and moral dispositions are associated.
 Suitable data were collected in three countries: the United states of America, Denmark and the Netherlands.
-Each sample contains multiple measures of political orientation and moral dispositions.
+Each sample contained multiple measures of political orientation and moral dispositions.
 In the original publication, the PBF was used to aggregate evidence across scales and countries to obtain an overall measure of support for the central hypothesis.
 This tutorial follows the same rationale, but uses only one effect size per sample,
-and varies the way this effect size is computed to illustrate different use cases. 
+and varies the way this effect size is computed to illustrate the more typical use case where the same informative hypothesis has been studied in different ways in multiple studies.
+We will examine the informative hypothesis that self-reported importance of family morality is positively associated with a conservative socio-political orientation.
+First, we load the `bain` library and assign the data to three objects with convenient names:
 
-
-
-```{r}
-NL <- bain::synthetic_nl
-DK <- bain::synthetic_dk
-US <- bain::synthetic_us
+```{r eval = TRUE}
+library(bain)
+NL <- synthetic_nl
+DK <- synthetic_dk
+US <- synthetic_us
 ```
 
 <!-- skeleton
@@ -497,48 +563,37 @@ US <- bain::synthetic_us
 <!-- However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much.  -->
 <!-- In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis.  -->
 <!-- Because the focus of this tutorial is on BES,  -->
-First, we briefly introduce the basic use of `bain::bain()`, and how to interpret its output. 
-Suppose we are interested in whether the self-reported importance of family morality positively predicts a conservative socio-political orientation.
-Because both scales consist of multiple items, we use structural equation modeling (SEM) to perform latent variable regression.
-Our hypothesis is $H_i: \beta > 0$, where $\beta$ (beta) is the standardized regression coefficient.
-Note that, for the sake of simplicity, this hypothesis corresponds to a traditional one-sided null-hypothesis test.
-The original publication instead used a minimal effect size of interest, and specified $H_i: \beta > .1$.
-The code below illustrates the analysis for a single sample.
-For a more in-depth tutorial on `bain::bain()`, see @hoijtink2019tutorial, and for further guidance on the use of `bain::bain()` in SEM, see @REF VAN LISSA TUTORIAL.
-
+First, we briefly introduce the basic use of the `bain()` function, and how to interpret its output.
+We must estimate a model suitable for testing our informative hypothesis.
+Because both scales consist of multiple items, we can use structural equation modeling (SEM) to perform latent variable regression [see @vanlissaTeacherCornerEvaluating2020]:
 <!--EB: For simplicities sake, I for now create simple average scores without taking into account reverse coding. This should likely be improved with factor scores -->
 <!-- CJ: Keep the code SUPER simple. No functions etc -->
 
-```{r echo = TRUE, eval = FALSE}
-# Load relevant packages
-library(bain)
+```{r echo = TRUE, eval = TRUE}
+# Load lavaan package for SEM
 library(lavaan)
 
-# Specify a SEM-model with two latent variables and latent regression
+# Specify SEM-model for latent variable regression
 model_nl <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
-                sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
-conservative ~ beta * family"
+fam =~ fam_1 + fam_2 + fam_3
+con =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
+       sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
+con ~ beta * fam"
 
 # Estimate the model in lavaan
 results_nl <- sem(model = model_nl, data = NL)
-
-# Test the hypothesis that the effect size labeled 'beta' is positive
-# The argument standardize = TRUE uses the standardized model parameters
-bain(results_nl, hypothesis = "beta > 0", standardize = TRUE)
 ```
-```{r echo = FALSE, eval = TRUE}
+```{r echo = FALSE, eval = FALSE}
 # Load relevant packages
 library(bain)
 library(lavaan)
 
 # Specify a SEM-model with two latent variables and latent regression
 model_nl <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
+fam =~ fam_1 + fam_2 + fam_3
+con =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
                 sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
-conservative ~ beta * family"
+con ~ beta * fam"
 
 # Estimate the model in lavaan
 results_nl <- sem(model = model_nl, data = NL)
@@ -546,9 +601,26 @@ results_nl <- sem(model = model_nl, data = NL)
 # Test the hypothesis that the effect size labeled 'beta' is positive
 # The argument standardize = TRUE uses the standardized model parameters
 bf_nl <- bain(results_nl, hypothesis = "beta > 0", standardize = TRUE)
-bf_nl
 ```
 
+The informative hypothesis in this tutorial is $H_i: \beta > 0$, where $\beta$ (beta) is the standardized regression coefficient.
+This corresponds to a traditional one-sided null-hypothesis test.
+Note that this deviates from the original publication
+which used a minimal effect size of interest and specified $H_i: \beta > .1$.
+The code below illustrates how to obtain a Bayes factor for this informative hypothesis,
+using the output of the SEM analysis above.
+We can refer to the parameter `beta` by name because we labeled it in the `lavaan` syntax;
+if we had not done so, we could find the names of all model parameters by running `get_estimates(results_nl, standardize = TRUE)`.
+When evaluating the code below,
+note that the hypothesis is strongly supported when compared to its complement.
+<!-- , $BF_c `report(bf_nl$fit$BF.c[1])`$. -->
+For a more in-depth tutorial on `bain()`, see @hoijtink2019tutorial, and for further guidance on the use of `bain()` for SEM, see @vanlissaTeacherCornerEvaluating2020.
+
+```{r echo = TRUE, eval = TRUE, results='hide'}
+# Test that the effect labeled 'beta' is positive
+bf_nl <- bain(results_nl, hypothesis = "beta > 0", standardize = TRUE)
+bf_nl
+```
 
 <!-- Socio-political orientation and group loyalty have been aggregated to variables `soc` and `grp` respectively.  -->
 <!-- Both are continuous variables with higher scores indicating either conservatism or higher group loyalty.  -->
@@ -591,30 +663,56 @@ print(fit_bain)
 ```
 <!-- SESAMESIM DATA: The output of `bain` seems to support neither hypothesis. The `fit` for both hypotheses is approximately zero which means that almost none of the data are in agreement with the restrictions the specified hypotheses pose. The `BF.c`, which is the Bayes Factor of the hypothesis versus its complement, is for both hypotheses close to zero. This implies that the complement of both hypotheses is $\frac{1}{BF.c}$ times more likely than the passed hypotheses. Finally, `PMPc`, the Posterior Model Probabilities of the specified hypotheses with $H_c$ included, is also close to zero for both specified hypothesis. This means that *out of* the specified hypotheses and their complement, the probability of $H_c$ being true is 99.9%. -->
 
-Note that the hypothesis is strongly supported when compared to its complement, $BF_c `report(bf_nl$fit$BF.c[1])`$.
-
 ### Aggregating evidence across studies
+
+```{r, eval = FALSE, echo = FALSE, results="hide"}
+# Specify the models for DK and US
+model_dk <- "
+fam =~ fam_1 + fam_2 + fam_3
+con =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
+sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
+con ~ beta * fam"
+model_us <- "
+fam =~ fam_1 + fam_2 + fam_3
+con =~
+secs_soc_1 + secs_soc_2 + secs_soc_3 + secs_soc_4 + secs_soc_5 + secs_soc_6 + secs_soc_7 +
+secs_eco_1 + secs_eco_2 + secs_eco_3 + secs_eco_4 + secs_eco_5
+con ~ beta * fam"
+
+# Estimate the model in lavaan
+results_dk <- sem(model = model_dk, data = DK)
+results_us <- sem(model = model_us, data = US)
+
+# Bind the models into a list
+results <- list(results_nl, results_dk, results_us)
+# Test the hypothesis that the effect size labeled 'beta' is positive
+bf_tot <- pbf(results, hypothesis = "beta > 0", standardize = TRUE)
+```
 
 As mentioned before, suitable data were collected to test the substantive hypothesis in three countries.
 There are differences between countries that prevent analyzing these data as a multilevel model, however.
 For instance, conservatism was measured using different scales.
 This is an appropriate situation to use the PBF to aggregate evidence across countries.
-First, we estimate a latent regression model for the remaining two countries, taking care to label the parameter of interest with the same label in all samples.
+First, we estimate a latent regression model for the remaining two countries, taking care to use the same label for the parameter of interest in all samples.
 Then, we bind all three SEM-models in a list, and call PBF to evaluate the hypothesis of interest on all models and aggregate the evidence.
+As the BF in all three samples is positive, the resulting PBF is very large.
+We can thus conclude that the central hypothesis receives overwhelming evidence across samples.
 
-```{r, eval = FALSE, echo = TRUE}
+```{r, eval = TRUE, echo = TRUE}
 # Specify the models for DK and US
 model_dk <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
-                sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
-conservative ~ beta * family"
+fam =~ fam_1 + fam_2 + fam_3
+con =~
+sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
+sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
+con ~ beta * fam"
 model_us <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ secs_soc_1 + secs_soc_2 + secs_soc_3 + secs_soc_4 + secs_soc_5 +
-                secs_soc_6 + secs_soc_7 + secs_eco_1 + secs_eco_2 + secs_eco_3 +
-                secs_eco_4 + secs_eco_5
-conservative ~ beta * family"
+fam =~ fam_1 + fam_2 + fam_3
+con =~
+secs_soc_1 + secs_soc_2 + secs_soc_3 + secs_soc_4 + secs_soc_5 +
+secs_soc_6 + secs_soc_7 +
+secs_eco_1 + secs_eco_2 + secs_eco_3 + secs_eco_4 + secs_eco_5
+con ~ beta * fam"
 
 # Estimate the model in lavaan
 results_dk <- sem(model = model_dk, data = DK)
@@ -625,33 +723,7 @@ results <- list(results_nl, results_dk, results_us)
 # Test the hypothesis that the effect size labeled 'beta' is positive
 pbf(results, hypothesis = "beta > 0", standardize = TRUE)
 ```
-```{r, eval = TRUE, echo = FALSE}
-# Specify the models for DK and US
-model_dk <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ sepa_soc_1 + sepa_soc_2 + sepa_soc_3 + sepa_soc_4 + sepa_soc_5 +
-                sepa_eco_1 + sepa_eco_2 + sepa_eco_3 + sepa_eco_4 + sepa_eco_5
-conservative ~ beta * family"
-model_us <- "
-family =~ fam_1 + fam_2 + fam_3
-conservative =~ secs_soc_1 + secs_soc_2 + secs_soc_3 + secs_soc_4 + secs_soc_5 +
-                secs_soc_6 + secs_soc_7 + secs_eco_1 + secs_eco_2 + secs_eco_3 +
-                secs_eco_4 + secs_eco_5
-conservative ~ beta * family"
 
-# Estimate the model in lavaan
-results_dk <- sem(model = model_dk, data = DK)
-results_us <- sem(model = model_us, data = US)
-
-# Bind the models into a list
-results <- list(results_nl, results_dk, results_us)
-# Test the hypothesis that the effect size labeled 'beta' is positive
-bf_tot <- pbf(results, hypothesis = "beta > 0", standardize = TRUE)
-bf_tot
-```
-
-As the BF in all three samples is positive, the resulting PBF is very large, $PBF `report(bf_tot[1,1])`$.
-We can thus conclude that the central hypothesis receives overwhelming evidence across samples.
 <!-- In the first use-case of `pbf()`, an `lm()` is ran for each sample. All `lm` objects are stored in a list which is passed to `pbf()`. -->
 <!-- `pbf()` supports lists of all objects that `bain()` also supports. All supported types are specified in bain vignette *REF*. One exception is the use of named vectors, which will be covered later. -->
 <!-- ```{r} -->
@@ -695,16 +767,18 @@ but the Dutch sample now contains a sample-specific hypothesis regarding the eff
 The `pbf()` function is called on a list of `bain` objects.
 Note that, in this case, `pbf()` does not require an argument `hypothesis`, as the hypotheses are contained in the `bain` objects.
 
-```{r, echo = TRUE, eval = FALSE}
+```{r, echo = TRUE, eval = TRUE, results = "hide"}
 # Add the additional predictor to the model, label the effect beta2
-model_nl <- paste(model_nl, "group =~ grp_1 + grp_2 + grp_3
-                             conservative ~ beta2 * group", sep = "\n")
+model_nl <- c(model_nl, "group =~ grp_1 + grp_2 + grp_3
+                         con ~ beta2 * group")
 
 # Estimate the model in lavaan
 results_nl <- sem(model = model_nl, data = NL)
 
 # Obtain BF for each sample; note that the Dutch sample has two hypotheses
-bf_nl <- bain(results_nl, hypothesis = "beta > 0;beta2 < 0", standardize = TRUE)
+bf_nl <- bain(results_nl, hypothesis = "beta > 0;
+                                        beta2 < 0", 
+              standardize = TRUE)
 bf_dk <- bain(results_dk, "beta > 0")
 bf_us <- bain(results_us, "beta > 0")
 
@@ -741,7 +815,7 @@ This may happen, for example, when aggregating findings from the published liter
 In this case, one can use the default interface of `bain`, as explained in [@hoijtink2019tutorial].
 This function requires four arguments: A named vector of parameter estimates, their asymptotic covariance matrix, the original sample size, and the number of within-group and between-group parameters.
 Note that, when analyzing a single parameter per sample, the standard error is sufficient to construct the asymptotic covariance matrix.
-Thus, this method is suitable for data that have been prepared for meta-analysis.
+Thus, this method can be applied to data that have been prepared for classic meta-analysis (effect sizes and their sampling variances).
 Importantly, unlike meta-analysis, the present method is suitable for conceptual replications.
 It does not require uniform effect size measures across studies.
 The example below illustrates how to aggregate evidence in favor of one hypotheses across three studies that each used different methods.
@@ -755,8 +829,8 @@ This conceptual hypothesis is tested differently in the three samples, resulting
 1. A bivariate regression coefficient for `grp` was calculated using the DK data, giving $H_i^{DK}: b_{fam} > 0$
 1. A correlation coefficient was calculated using the US data, giving $H_i^{US}: \rho_{fam,con} > 0$
 
-Note that we intentionally manipulate the data to fit these types of analyses;
-for example, we compute mean scale scores and dichotomize a continuous variable to conduct a t-test.
+Note that we intentionally manipulate the data to illustrate these different analyses;
+for example, we compute mean scale scores and dichotomize the continuous conservatism scale to conduct a t-test.
 We do not advocate these practices for applied research.
 
 First we obtain the relevant parameter estimates and their sampling variances,
@@ -785,12 +859,14 @@ US <- data.frame(
                                "secs_eco_3", "secs_eco_4", "secs_eco_5")]))
 
 # NL: Conduct t-test using Cohen's D
-NL$group <- cut(NL$conservative, breaks = 2, labels = c("liberal", "conservative"))
+NL$group <- cut(NL$conservative, breaks = 2,
+                labels = c("liberal", "conservative"))
 sample_sizes <- table(NL$group)
 sds <- tapply(NL$family, NL$group, sd)
 pooled_sd <- sqrt(sum((sample_sizes - 1) * sds) / (sum(sample_sizes) - 2))
 NL_est <- diff(tapply(NL$family, NL$group, mean)) / pooled_sd
-NL_var <- (sum(sample_sizes) / prod(sample_sizes)) + (NL_est^2 / (2*sum(sample_sizes)))
+NL_var <- (sum(sample_sizes) / prod(sample_sizes)) +
+  (NL_est^2 / (2*sum(sample_sizes)))
 
 # DK: Conduct bivariate regression
 DK_fit <- lm(conservative ~ family, data = DK)
@@ -806,9 +882,9 @@ names(NL_est) <- names(DK_est) <- names(US_est) <- "parameter"
 ```
 
 Then, we use `bain.default()` to evaluate the central hypothesis on each parameter estimate. 
-The pbf can then be calculated as in the previous use case.
+The `pbf()` function can be called on a list of the resulting bain objects.
 
-```{r}
+```{r eval = TRUE, echo = TRUE, results='hide'}
 # Use bain.default() to obtain BF for the central hypothesis 
 NL_bain <- bain(x = NL_est, 
                 Sigma = matrix(NL_var, 1, 1),
@@ -834,7 +910,6 @@ The results suggest substantial evidence in favor of the hypothesis that there i
 Although each study used a different method to assess this hypothesis,
 their evidence can be synthesized using the pbf.
 
-<!--
 ```{r, eval = FALSE, echo = FALSE}
 get_estimates <- function(sample){
   number_sites <- length(levels(sesamesim$site))
@@ -863,8 +938,8 @@ ests_sample3 <- get_estimates(sample3)
 
 ```
 
-Then, each object is converted to a `bain` object with these estimates
-```{r}
+
+```{r eval = FALSE, echo = FALSE, results = "hide"}
 bain_sample1_ests <- bain(x = ests_sample1[['means']], 
                           Sigma = ests_sample1[['covmat']], 
                           n = ests_sample1[['sample_size']], 
@@ -881,16 +956,41 @@ bain_sample3_ests <- bain(x = ests_sample3[['means']],
                           hypothesis = hypotheses)
 
 bain_allsamples_ests = list(bain_sample1_ests, bain_sample2_ests, bain_sample3_ests)
-```
-
-And finally, on these objects, `pbf()` can be called.
-```{r}
 pbf(bain_allsamples_ests)
 ```
--->
+
 <!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use-case, or is something off in the script? -->
 <!-- CJ: We should ask Herbert about this, but this example won't make it into this paper. If you want, you can send Herbert a reproducible example of the 'problem'!-->
 
+# Conclusion
+
+<!-- Researchers need to choose a method that best suits their research question, -->
+ <!-- the study highlights the importance of carefully considering the research question when selecting a method for meta-analysis, and the potential trade-offs that may exist between sensitivity and specificity when using different methods. -->
+
+In conclusion, this study evaluated the performance of the product Bayes factor as a method for evidence synthesis,
+and compared it against other commonly used evidence synthesis methods under different simulation conditions.
+Compared to the other methods,
+PBF had the highest overall accuracy.
+This was primarily due to its greater sensitivity.
+However, PBF had lower specificity than all other algorithms, suggesting a trade-off between sensitivity and specificity.
+The other algorithms showed ceiling effects in specificity, limiting their sensitivity.
+The performance of the PBF was most strongly affected by sample size,
+followed by the number of samples and reliability.
+We introduced a user-friendly implementation of the PBF in the `bain` R-package,
+and demonstrated its use with various analysis techniques in R,
+as well as with sufficient statistics that are already routinely coded for meta-analysis (i.e., effect sizes and their sampling variance).
+This means that researchers can now use the PBF to aggregate evidence in situations where classic meta-analytic methods are less suitable.
+for example, when one informative hypothesis has been tested in several replication studies,
+but these replication studies are quite heterogeneous because they sample from different populations and use different methods or analysis techniques.
+Especially when the number of replication studies is too small to adequately account for these sources of between-study heterogeneity,
+the PBF may be a useful method to aggregate evidence for the common informative hypothesis.
+Researchers should be aware that the PBF trades off increased sensitivity for decreased specificity,
+and that it addresses a different research question than other research synthesis methods.
+This highlights the importance of careful interpretation of the results,
+and consideration of the research question when selecting an aggregation method.
+In sum,
+our results suggest that PBF is a useful evidence synthesis method,
+which is now broadly accessible due to its inclusion in the `bain` R-package.
 
 \newpage
 
@@ -902,6 +1002,19 @@ pbf(bain_allsamples_ests)
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
