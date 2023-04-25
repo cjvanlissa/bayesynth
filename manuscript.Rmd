@@ -39,7 +39,7 @@ authornote: |
   This is a preprint paper, generated from Git Commit # `r substr(gert::git_commit_id(),1,7)`. This work was funded by a NWO Veni Grant (NWO Grant Number VI.Veni.191G.090), awarded to the lead author.
 
 abstract: |
-  The product Bayes factor (PBF) can synthesize evidence in favor of an informative hypothesis across heterogeneous replication studies. It is particularly useful when the number of studies is relatively low and conventional assumptions about between-studies heterogeneity are likely violated. The present paper introduces a user-friendly implementation of the PBF in the bain R-package, and demonstrates its use in several tutorial examples. The method was validated in a simulation study that manipulated sample size, number of replication samples, and reliability. PBF had a higher overall accuracy when benchmarked against other evidence synthesis methods, including random-effects meta-analysis (RMA). This was primarily due to PBF’s greater sensitivity in detecting a true effect. However, PBF had relatively lower specificity. The PBF showed increasing sensitivity and specificity with increasing sample size. With an increasing number of samples, lower sensitivity was traded for greater specificity. Although PBF's overall performance was less susceptible to reliability than the other algorithms, this masked a trade-off between reliability and specificity. PBF thus appears to be a promising method for meta-analysis of heterogeneous conceptual replication studies. Nonetheless, users should be aware of its lower specificity, and the fact that it takes a Bayesian approach to inference and addresses a qualitatively different research question than other evidence synthesis methods.
+  The product Bayes factor (PBF) can synthesize evidence for an informative hypothesis across heterogeneous replication studies. It is particularly useful when the number of studies is relatively low and conventional assumptions about between-studies heterogeneity are likely violated. The present paper introduces a user-friendly implementation of the PBF in the bain R-package, and demonstrates its use in several tutorial examples. The method was validated in a simulation study that manipulated sample size, number of replication samples, and reliability. PBF had a higher overall accuracy when benchmarked against other evidence synthesis methods, including random-effects meta-analysis (RMA). This was primarily due to PBF’s greater sensitivity in detecting a true effect. However, PBF had relatively lower specificity. The PBF showed increasing sensitivity and specificity with increasing sample size. With an increasing number of samples, lower sensitivity was traded for greater specificity. Although PBF's overall performance was less susceptible to reliability than the other algorithms, this masked a trade-off between reliability and specificity. PBF thus appears to be a promising method for meta-analysis of heterogeneous conceptual replication studies. Nonetheless, users should be aware of its lower specificity, and the fact that it takes a Bayesian approach to inference and addresses a qualitatively different research question than other evidence synthesis methods.
   
 keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
 wordcount         : "5356"
@@ -70,6 +70,7 @@ library(bain)
 r_refs("r-references.bib")
 source("UI function/pbf.R")
 out <- readRDS("out.RData")
+resultaction = "markup"
 ```
 
 ```{r analysis-preferences}
@@ -84,10 +85,15 @@ In step with this interest in replication research,
 research synthesis methods have become increasingly popular.
 These methods aggregate research findings,
 and thus enable drawing overarching conclusions across multiple (replication) studies.
-In this paper, we introduce a new research synthesis method that uses Bayesian evidence synthesis to aggregate the evidence in favor of an informative hypothesis, quantified by the Bayes factor,
+This paper addresses Bayesian evidence synthesis,
+a research synthesis method that aggregates evidence for an informative hypothesis, quantified by the Bayes factor,
 across multiple studies.
 This method has the potential to provide a more comprehensive and accurate picture of the state of the literature, and to identify areas of consensus and disagreement among studies.
-We describe the method in detail and demonstrate its application through a tutorial example analysis.
+We describe the method in detail,
+benchmark its performance against other commonly used research synthesis methods,
+and demonstrate its application through a tutorial example analysis.
+To facilitate uptake of the method by applied researchers, we introduce an implementation of the method in the `bain` R-package.
+This implementation enables the use of Bayesian evidence synthesis for many commonly used statistical analyses in R.
 
 A key challenge in quantitative research synthesis is dealing with between-studies heterogeneity [@higginsReevaluationRandomeffectsMetaanalysis2009].
 When studies examine the same research question in different laboratories, use idiosyncratic methods, and sample from distinct populations, these between-study differences can introduce heterogeneity in findings.
@@ -110,18 +116,23 @@ but are otherwise very heterogeneous.
 The situation may arise where each study is uniquely identified by a combination of linearly dependent moderators.
 In this case, it is no longer possible to synthesize *effect sizes* while accounting for heterogeneity using statistical methods.
 <!-- even machine learning based methods cannot identify relevant moderators. -->
-It is still possible, however, to quantify the support these studs provide for the underlying informative hypothesis.
-To this end, Bayesian evidence synthesis (BES) aggregates the evidence in favor of an informative hypothesis $H_i$ across studies,
+It is still possible, however, to quantify the support these studies provide for the underlying informative hypothesis.
+To this end, Bayesian evidence synthesis (BES) aggregates the evidence for a theoretical relationship across studies,
 without imposing assumptions about heterogeneity [@kuiperCombiningStatisticalEvidence2013].
+Although this assumption is not necessary,
+for the sake of simplicity we assume that this theoretical relationship is evaluated via informative hypothesis $H_i$ in all studies.
 
 The amount of evidence for a hypothesis can be expressed as a Bayes factor, or BF.
-The BF can be interpreted as the ratio of evidence in favor of one hypothesis $H_1$ relative to another hypothesis $H_2$, so $BF_{12} = \frac{H_1}{H_2}$.
+The BF can be interpreted as the ratio of evidence for one hypothesis relative to another hypothesis.
+<!-- , so $BF_{12} = \frac{BF_{1u}}{BF_{2u}}$. -->
+<!-- Note that $BF_{12}$ is itself a ratio of two Bayes factors with a common denominator, which renders them comparable [see @guApproximatedAdjustedFractional2018]. -->
 Within the scope of this paper,
-all Bayes factors are the ratio of evidence in favor of an informative hypothesis $H_i$ relative to its complement $H_{!i}$, $BF_{c} = \frac{H_i}{H_!i}$. 
+all Bayes factors are the ratio of evidence for an informative hypothesis $H_i$ relative to its complement $H_{!i}$ [see @guApproximatedAdjustedFractional2018].
+<!-- This Bayes factor , $BF_{c} = \frac{H_i}{H_!i}$.  -->
 The subscript $_!$ represents the negation operator;
 in other words, $H_{!i}$ means "not $H_i$".
-Consequently, $BF_c$ represents the ratio of evidence in favor of $H_i$ divided by evidence against it.
-A value of $BF_c = 10$ means that the data provide ten times more support in favor of the hypothesis than against it.
+This Bayes factor, which we will refer to as $BF_c$, represents the ratio of evidence for $H_i$ divided by evidence against it.
+A value of $BF_c = 10$ means that the data provide ten times more support for the hypothesis than against it.
 
 When multiple studies each provide evidence for $H_i$ in the form of complement Bayes factors,
 these Bayes factors can be synthesized across studies by taking their product [@kuiperCombiningStatisticalEvidence2013].
@@ -137,7 +148,7 @@ Meta-analysis estimates the point estimate or distribution of a population effec
 It pools estimates of this effect size across multiple studies to obtain an overall estimate of the effect size.
 It thus answers questions like:
 Given certain assumptions about between-studies heterogeneity, what is the average population effect size?
-BES, on the other hand, aggregates evidence in favor of an informative hypothesis across multiple studies.
+BES, on the other hand, aggregates evidence for an informative hypothesis across multiple studies.
 It thus answers the question: Do all these studies support the hypothesis of interest?
 Both methods are appropriate for different research questions, and provide complementary information.
 
@@ -172,21 +183,22 @@ and the resulting evidence was synthesized across samples using multiple methods
 <!-- In your simulation, you use PBF > 3, so this may be hard to reach when the truth is on the border, but that is due to the subjective choice of 3... -->
 <!-- So, I already thought that using a smaller population rho value would be of added value, but now I believe you should really include this. -->
 <!-- I do see that this would end up in multiple results (once using .1 and 0.2, once (say) 0 or 0.05 and .2; but also when using other cut-off values for PBF). -->
-The informative hypothesis was kept constant at $H_i: \rho > .1$.
+The informative hypothesis, set to be equal across studies,
+was $H_i: \rho > .1$.
 To examine the performance of the different evidence synthesis methods in a range of scenarios,
 several design factors were manipulated.
 First was the presence or absence of a true population effect.
-A present effect was defined as $\rho = .2$;
+Given the informative hypothesis of $H_i: \rho > .1$,
+the presence of a true population effect was defined as $\rho = .2$ and
 a null effect was defined as $\rho = .1$.
 The second design factor was the number of observations per sample $n \in (50, 200, 500, 800)$.
 These values were chosen because they correspond to a statistical
 <!-- pwr.r.test(c(50, 200, 500, 800), .1) -->
 power to reject a false null hypothesis of $\beta \in (.10, .30, .60, .80)$ power, respectively,
-assuming $\alpha = .05$ and a known effect size of $\rho = .1$.
+assuming $\alpha = .05$ and a known effect size of $\rho = .1$ [@cohenStatisticalPowerAnalysis1988].
 Third, we manipulated the number of independent samples (or: replication studies), $k \in (2, 3, 10)$.
-Fourth, the reliability of the two correlated variables was varied between $\alpha \in (0.6, 0.8, 1.0)$,
-where 0.6 is the lowest reliability conventionally considered to be acceptable, and 1 represents perfect reliability, as is
-assumed when analyzing correlations between observed items or scale scores.
+Fourth, the reliability of the two correlated variables was varied between $\alpha \in (0.6, 0.8, 1.0)$ to range from questionable to perfect reliability [@nunnallyPsychometricTheory2017].
+Questionable reliability is the lowest level considered to be acceptable in social scientific research, and perfect reliability is what is assumed when analyzing correlations between observed items or scale scores.
 For all unique combinations of these design factors,
 the simulation was repeated 1000 times.
 
@@ -206,7 +218,7 @@ and does not quantify the strength of the evidence [@hedgesVotecountingMethodsRe
 Our vote counting algorithm summed the number of one-sided z-tests of a null hypothesis corresponding to the informative hypothesis,
 so $H_0: \rho = .1$ and $H_a: \rho > .1$, which corresponds to $H_i$.
 The decision criterion was that the hypothesis was supported in the majority of samples.
-Thus, for example, if $H_a$ was supported in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extension, $H_i$).
+Thus, for example, if $H_0$ was rejected in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extension, $H_i$).
 
 The third algorithm was *random-effects meta-analysis* (RMA),
 which is the current gold standard for evidence synthesis [@viechtbauerConductingMetaanalysesMetafor2010].
@@ -229,7 +241,7 @@ IPD was also evaluated using the lower bound of a 90% confidence interval for th
 ## Performance indicators
 
 For each algorithm, inferential decisions made using the criteria described above were compared to the population status of the hypothesis (true or false).
-The resulting confusion matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP) and false negatives (FN).
+The resulting confusion matrix gives the number of decisions that were true positives (TP), true negatives (TN), false positives (FP), and false negatives (FN).
 These quantities were summarized as sensitivity, $\frac{TP}{TP + FN}$,
 the ability to detect an effect given that it was indeed true in the population,
 <!-- i think sensitivity is the ability to detect an effect, given that the effect is truly there. I found that its formula is usually presented as TP/(TP+FN)-->
@@ -260,9 +272,9 @@ tab <- tab[tab$Metric %in% c("sensitivity", "specificity", "accuracy"),]
 rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Marginal confusion matrix metrics.")
 ```
-First, we examined overall model performance across conditions.
+We examined overall model performance across conditions.
 PBF had a higher overall accuracy than other algorithms
-followed by IPD, then RMA and finally VC,
+followed by IPD, then RMA, and finally VC,
 see Table \@ref(tab:tabconf).
 This higher accuracy was primarily driven by PBF's greater sensitivity to detect a true effect compared to other algorithms.
 However, PBF had a lower specificity compared to all other algorithms.
@@ -340,7 +352,7 @@ ggsave("groups.pdf", p, device = "pdf", width = 140, height = 100, units = "mm")
 knitr::include_graphics("groups.pdf")
 ```
 
-The figure indicates that, for PBF at higher levels of $k$,
+Figure \@ref(fig:figk) indicates that, for PBF at higher levels of $k$,
 lower sensitivity was traded for greater specificity.
 The other algorithms did not show this pattern, as their specificity was at a ceiling.
 This difference in pattern of effects explains why number of samples had a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
@@ -457,19 +469,20 @@ We nonetheless compare them because of their similar usage in evidence synthesis
 It is up to individual researchers to choose an appropriate method,
 guided by the research question and the available information.
 For instance, when raw data is unavailable, IPD cannot be used,
-and when effect sizes are not available, only VC can be used.
+and when parameter estimates or effect sizes are not reported, only VC can be used.
 
 Aside from the aforementioned fact that the PBF answers a different research question than the other algorithms,
 it is worth noting limitations of the interpretation of the PBF.
 The PBF renders support for one specific informative hypothesis versus its complement.
 If the informative hypothesis is supported, this does not necessarily mean that it is also true.
-Consider the hypothetical example that a test of the informative hypothesis that the earth is flat received support with $BF = 3.01$.
+Consider the hypothetical example that the informative hypothesis that the earth is flat was supported with $BF = 3.01$.
 Although the data support this hypothesis over its complement, the hypothesis is clearly wrong (the earth is spherical).
-If we would have tested another hypothesis, e.g., the earth is shaped like an American football, it would have received much more support, e.g. $BF = 1000$, even though it is also wrong.
+If we would have evaluated another hypothesis, e.g., the earth is shaped like an American football, it would have received much more support, e.g. $BF = 1000$, even though it is also wrong.
 A high Bayes factor thus does not mean that the hypothesis is true.
 Conversely, a low Bayes factor merely indicates that the informative hypothesis is not supported,
 and does not provide information about the true state of affairs.
-
+A related limitation is that our simulation study used an arbitrary - albeit conventional - threshold for inference [@jeffreys1998theory].
+In applied research, it is more sensible to evaluate the weight of evidence, rather than resorting to a rule of thumb.
 <!-- In sum, this simulation study suggest that PBF may be a good choice when sensitivity is of utmost importance, but researchers should be mindful of the trade-off between specificity and sensitivity. -->
 <!-- The results also highlight the importance of considering sample size, number of samples, -->
 <!-- and reliability when designing studies and conducting meta-analyses. Future research should examine the performance of additional algorithms and the impact of other design factors on algorithm performance. -->
@@ -534,15 +547,15 @@ and have been simulated based on the data presented in [@vanleeuwen2022morality]
 A more detailed description of the datasets is found in [@vanleeuwen2022morality];
 additionally, the dataset documentation is accessed by running `?synthetic_us`, `?synthetic_dk` or `?synthetic_nl` in the R console.
 Van Leeuwen and colleagues conducted a theory-driven, preregistered study to address the research question whether political orientation and moral dispositions are associated.
-Suitable data were collected in three countries: the United states of America, Denmark and the Netherlands.
+Suitable data were collected in three countries: the United states of America, Denmark, and the Netherlands.
 Each sample contained multiple measures of political orientation and moral dispositions.
 In the original publication, the PBF was used to aggregate evidence across scales and countries to obtain an overall measure of support for the central hypothesis.
 This tutorial follows the same rationale, but uses only one effect size per sample,
 and varies the way this effect size is computed to illustrate the more typical use case where the same informative hypothesis has been studied in different ways in multiple studies.
 We will examine the informative hypothesis that self-reported importance of family morality is positively associated with a conservative socio-political orientation.
-First, we load the `bain` library and assign the data to three objects with convenient names:
+We load the `bain` library and assign the data to three objects with convenient names:
 
-```{r eval = TRUE}
+```{r eval = TRUE, echo = TRUE}
 library(bain)
 NL <- synthetic_nl
 DK <- synthetic_dk
@@ -563,8 +576,8 @@ US <- synthetic_us
 <!-- However, there are many more hypotheses that can theoretically be tested and researchers may not be interested in the null-hypothesis. They may also not only be interested in whether the hypothesis is probable, but also by how much.  -->
 <!-- In the Bayesian framework, the Bayes Factor (BF) is a test statistic that gives the amount of support for any possible desired hypothesis.  -->
 <!-- Because the focus of this tutorial is on BES,  -->
-First, we briefly introduce the basic use of the `bain()` function, and how to interpret its output.
-We must estimate a model suitable for testing our informative hypothesis.
+We briefly introduce the basic use of the `bain()` function, and how to interpret its output.
+We must estimate a model suitable for evaluating our informative hypothesis.
 Because both scales consist of multiple items, we can use structural equation modeling (SEM) to perform latent variable regression [see @vanlissaTeacherCornerEvaluating2020]:
 <!--EB: For simplicities sake, I for now create simple average scores without taking into account reverse coding. This should likely be improved with factor scores -->
 <!-- CJ: Keep the code SUPER simple. No functions etc -->
@@ -600,25 +613,23 @@ results_nl <- sem(model = model_nl, data = NL)
 
 # Test the hypothesis that the effect size labeled 'beta' is positive
 # The argument standardize = TRUE uses the standardized model parameters
-bf_nl <- bain(results_nl, hypothesis = "beta > 0", standardize = TRUE)
+bf_nl <- bain(results_nl, hypothesis = "beta > .1", standardize = TRUE)
 ```
 
-The informative hypothesis in this tutorial is $H_i: \beta > 0$, where $\beta$ (beta) is the standardized regression coefficient.
-This corresponds to a traditional one-sided null-hypothesis test.
-Note that this deviates from the original publication
-which used a minimal effect size of interest and specified $H_i: \beta > .1$.
+The informative hypothesis in this tutorial is $H_i: \beta > .1$, where $\beta$ (beta) is the standardized regression coefficient.
+Instead of a conventional null hypothesis, $H_0: \beta = 0$,
+the value of $.1$ was used as a minimal effect size of interest.
 The code below illustrates how to obtain a Bayes factor for this informative hypothesis,
 using the output of the SEM analysis above.
 We can refer to the parameter `beta` by name because we labeled it in the `lavaan` syntax;
 if we had not done so, we could find the names of all model parameters by running `get_estimates(results_nl, standardize = TRUE)`.
-When evaluating the code below,
-note that the hypothesis is strongly supported when compared to its complement.
+The results indicate that the hypothesis is supported when compared to its complement.
 <!-- , $BF_c `report(bf_nl$fit$BF.c[1])`$. -->
 For a more in-depth tutorial on `bain()`, see @hoijtink2019tutorial, and for further guidance on the use of `bain()` for SEM, see @vanlissaTeacherCornerEvaluating2020.
 
-```{r echo = TRUE, eval = TRUE, results='hide'}
+```{r echo = TRUE, eval = TRUE, results = resultaction}
 # Test that the effect labeled 'beta' is positive
-bf_nl <- bain(results_nl, hypothesis = "beta > 0", standardize = TRUE)
+bf_nl <- bain(results_nl, hypothesis = "beta > .1", standardize = TRUE)
 bf_nl
 ```
 
@@ -654,7 +665,7 @@ library(bain)
 fit <- lm(soc ~ grp, data = NLa)
 
 #specify Hypotheses to evaluate
-hypotheses <- "grp > 0"
+hypotheses <- "grp > .1"
 
 fit_bain <- bain(fit, hypothesis = hypotheses)
 print(fit_bain)
@@ -665,7 +676,7 @@ print(fit_bain)
 
 ### Aggregating evidence across studies
 
-```{r, eval = FALSE, echo = FALSE, results="hide"}
+```{r, eval = FALSE, echo = FALSE, results = resultaction}
 # Specify the models for DK and US
 model_dk <- "
 fam =~ fam_1 + fam_2 + fam_3
@@ -686,17 +697,17 @@ results_us <- sem(model = model_us, data = US)
 # Bind the models into a list
 results <- list(results_nl, results_dk, results_us)
 # Test the hypothesis that the effect size labeled 'beta' is positive
-bf_tot <- pbf(results, hypothesis = "beta > 0", standardize = TRUE)
+bf_tot <- pbf(results, hypothesis = "beta > .1", standardize = TRUE)
 ```
 
-As mentioned before, suitable data were collected to test the substantive hypothesis in three countries.
+As mentioned before, suitable data were collected to evaluate the substantive hypothesis in three countries.
 There are differences between countries that prevent analyzing these data as a multilevel model, however.
 For instance, conservatism was measured using different scales.
 This is an appropriate situation to use the PBF to aggregate evidence across countries.
-First, we estimate a latent regression model for the remaining two countries, taking care to use the same label for the parameter of interest in all samples.
+Below, we estimate a latent regression model for the remaining two countries, taking care to use the same label for the parameter of interest in all samples.
 Then, we bind all three SEM-models in a list, and call PBF to evaluate the hypothesis of interest on all models and aggregate the evidence.
 As the BF in all three samples is positive, the resulting PBF is very large.
-We can thus conclude that the central hypothesis receives overwhelming evidence across samples.
+We can thus conclude that the central hypothesis receives overwhelming support across samples.
 
 ```{r, eval = TRUE, echo = TRUE}
 # Specify the models for DK and US
@@ -721,7 +732,7 @@ results_us <- sem(model = model_us, data = US)
 # Bind the models into a list
 results <- list(results_nl, results_dk, results_us)
 # Test the hypothesis that the effect size labeled 'beta' is positive
-pbf(results, hypothesis = "beta > 0", standardize = TRUE)
+pbf(results, hypothesis = "beta > .1", standardize = TRUE)
 ```
 
 <!-- In the first use-case of `pbf()`, an `lm()` is ran for each sample. All `lm` objects are stored in a list which is passed to `pbf()`. -->
@@ -762,12 +773,12 @@ pbf(results, hypothesis = "beta > 0", standardize = TRUE)
 The `pbf()` function also accepts multiple `bain` objects.
 This makes it possible to, for example, evaluate different sets of hypotheses on different data sets before using the resulting `bain` objects to aggregate the evidence for all common hypotheses across datasets.
 The example below illustrates this use case.
-As before, all analyses share one hypotheses in common ($H_i: \beta_{fam} > 0$),
-but the Dutch sample now contains a sample-specific hypothesis regarding the effect of group morality, namely that $\beta_{grp} < 0$.
+As before, all analyses share one hypotheses in common ($H_i: \beta_{fam} > .1$),
+but the Dutch sample now contains a sample-specific hypothesis regarding the effect of group morality, namely that $\beta_{grp} < .1$.
 The `pbf()` function is called on a list of `bain` objects.
 Note that, in this case, `pbf()` does not require an argument `hypothesis`, as the hypotheses are contained in the `bain` objects.
 
-```{r, echo = TRUE, eval = TRUE, results = "hide"}
+```{r, echo = TRUE, eval = TRUE, results = resultaction}
 # Add the additional predictor to the model, label the effect beta2
 model_nl <- c(model_nl, "group =~ grp_1 + grp_2 + grp_3
                          con ~ beta2 * group")
@@ -776,11 +787,11 @@ model_nl <- c(model_nl, "group =~ grp_1 + grp_2 + grp_3
 results_nl <- sem(model = model_nl, data = NL)
 
 # Obtain BF for each sample; note that the Dutch sample has two hypotheses
-bf_nl <- bain(results_nl, hypothesis = "beta > 0;
-                                        beta2 < 0", 
+bf_nl <- bain(results_nl, hypothesis = "beta > .1;
+                                        beta2 < .1", 
               standardize = TRUE)
-bf_dk <- bain(results_dk, "beta > 0")
-bf_us <- bain(results_us, "beta > 0")
+bf_dk <- bain(results_dk, "beta > .1")
+bf_us <- bain(results_us, "beta > .1")
 
 # Bind bain objects into a list
 bfs <- list(bf_nl, bf_dk, bf_us)
@@ -810,7 +821,7 @@ tryCatch({
 
 ### Using sufficient statistics
 
-A third use-case occurs when the raw data from different samples is not available.
+A third use-case occurs when the raw data from different samples are not available.
 This may happen, for example, when aggregating findings from the published literature (similar to meta-analysis).
 In this case, one can use the default interface of `bain`, as explained in [@hoijtink2019tutorial].
 This function requires four arguments: A named vector of parameter estimates, their asymptotic covariance matrix, the original sample size, and the number of within-group and between-group parameters.
@@ -818,23 +829,23 @@ Note that, when analyzing a single parameter per sample, the standard error is s
 Thus, this method can be applied to data that have been prepared for classic meta-analysis (effect sizes and their sampling variances).
 Importantly, unlike meta-analysis, the present method is suitable for conceptual replications.
 It does not require uniform effect size measures across studies.
-The example below illustrates how to aggregate evidence in favor of one hypotheses across three studies that each used different methods.
+The example below illustrates how to aggregate evidence for one hypotheses across three studies that each used different methods.
 <!-- CJ: What I'd like to do here is show how to aggregate a t-test, a regression coefficient and a correlation coefficient -->
 
-The present use case effectively tests the following hypothesis:
+The present use case evaluates the following hypothesis:
 *There is a positive association between family morality and political conservatism*.
-This conceptual hypothesis is tested differently in the three samples, resulting in three different types of statistics and distinct sample-specific hypotheses:
+This conceptual hypothesis is evaluated differently in the three samples, resulting in three different types of statistics and distinct sample-specific hypotheses:
 
-1. A t-test was performed using the NL data; using Cohen's D gives $H_i^{NL}: \delta_{conservative > liberal} > 0$
-1. A bivariate regression coefficient for `grp` was calculated using the DK data, giving $H_i^{DK}: b_{fam} > 0$
-1. A correlation coefficient was calculated using the US data, giving $H_i^{US}: \rho_{fam,con} > 0$
+1. A t-test was performed using the NL data; using Cohen's D gives $H_i^{NL}: \delta_{conservative > liberal} > 0$, where $\delta$ is the mean difference between groups.
+1. A bivariate regression coefficient was calculated using the DK data, giving $H_i^{DK}: \beta_{fam} > 0$
+1. A correlation coefficient was calculated using the US data, giving $H_i^{US}: \rho_{fam,con} > 0$, where $\rho$ is the correlation between family morality and conservatism.
 
 Note that we intentionally manipulate the data to illustrate these different analyses;
 for example, we compute mean scale scores and dichotomize the continuous conservatism scale to conduct a t-test.
 We do not advocate these practices for applied research.
 
 First we obtain the relevant parameter estimates and their sampling variances,
-which allows us to test the specific hypotheses in `bain`:
+which allows us to evaluate the specific hypotheses in `bain`:
 
 ```{r eval = TRUE, echo = TRUE}
 # Create mean scale scores
@@ -884,7 +895,7 @@ names(NL_est) <- names(DK_est) <- names(US_est) <- "parameter"
 Then, we use `bain.default()` to evaluate the central hypothesis on each parameter estimate. 
 The `pbf()` function can be called on a list of the resulting bain objects.
 
-```{r eval = TRUE, echo = TRUE, results='hide'}
+```{r eval = TRUE, echo = TRUE, results = resultaction}
 # Use bain.default() to obtain BF for the central hypothesis 
 NL_bain <- bain(x = NL_est, 
                 Sigma = matrix(NL_var, 1, 1),
@@ -906,9 +917,8 @@ US_bain <- bain(x = US_est,
 pbf(list(US_bain, DK_bain, NL_bain))
 ```
 
-The results suggest substantial evidence in favor of the hypothesis that there is a positive association between family morality and political conservatism.
+The results suggest substantial evidence for the hypothesis that there is a positive association between family morality and political conservatism.
 Although each study used a different method to assess this hypothesis,
-their evidence can be synthesized using the pbf.
 
 ```{r, eval = FALSE, echo = FALSE}
 get_estimates <- function(sample){
@@ -939,7 +949,7 @@ ests_sample3 <- get_estimates(sample3)
 ```
 
 
-```{r eval = FALSE, echo = FALSE, results = "hide"}
+```{r eval = FALSE, echo = FALSE, results = resultaction}
 bain_sample1_ests <- bain(x = ests_sample1[['means']], 
                           Sigma = ests_sample1[['covmat']], 
                           n = ests_sample1[['sample_size']], 
@@ -975,12 +985,11 @@ This was primarily due to its greater sensitivity.
 However, PBF had lower specificity than all other algorithms, suggesting a trade-off between sensitivity and specificity.
 The other algorithms showed ceiling effects in specificity, limiting their sensitivity.
 The performance of the PBF was most strongly affected by sample size,
-followed by the number of samples and reliability.
 We introduced a user-friendly implementation of the PBF in the `bain` R-package,
 and demonstrated its use with various analysis techniques in R,
 as well as with sufficient statistics that are already routinely coded for meta-analysis (i.e., effect sizes and their sampling variance).
 This means that researchers can now use the PBF to aggregate evidence in situations where classic meta-analytic methods are less suitable.
-for example, when one informative hypothesis has been tested in several replication studies,
+For example, when one informative hypothesis has been evaluated in several replication studies,
 but these replication studies are quite heterogeneous because they sample from different populations and use different methods or analysis techniques.
 Especially when the number of replication studies is too small to adequately account for these sources of between-study heterogeneity,
 the PBF may be a useful method to aggregate evidence for the common informative hypothesis.
@@ -1002,6 +1011,7 @@ which is now broadly accessible due to its inclusion in the `bain` R-package.
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
 
 
 
