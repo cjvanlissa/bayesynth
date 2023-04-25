@@ -4,10 +4,10 @@ shorttitle        : "PRODUCT BAYES FACTOR"
 
 author:
   - name: "Caspar J. Van Lissa"
-    affiliation: "1,2"
+    affiliation: "1"
     corresponding: yes
-    address: "Padualaan 14, 3584CH Utrecht, The Netherlands"
-    email: "c.j.vanlissa@uu.nl"
+    address: "Professor Cobbenhagenlaan 125, 5037 DB Tilburg, The Netherlands"
+    email: "c.j.vanlissa@tilburguniversity.edu"
     role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
       - Conceptualization
       - Formal Analysis
@@ -36,13 +36,14 @@ affiliation:
     institution   : "Utrecht University, dept. Methodology & Statistics"
 
 authornote: |
-  This is a preprint paper, generated from Git Commit # `r substr(gert::git_commit_id(),1,7)`. This work was funded by a NWO Veni Grant (NWO Grant Number VI.Veni.191G.090), awarded to the lead author.
+  This is a preprint paper, generated from Git Commit # `r substr(gert::git_commit_id(),1,8)`. This work was funded by a NWO Veni Grant (NWO Grant Number VI.Veni.191G.090), awarded to the lead author.
 
 abstract: |
-  The product Bayes factor (PBF) can synthesize evidence for an informative hypothesis across heterogeneous replication studies. It is particularly useful when the number of studies is relatively low and conventional assumptions about between-studies heterogeneity are likely violated. The present paper introduces a user-friendly implementation of the PBF in the bain R-package, and demonstrates its use in several tutorial examples. The method was validated in a simulation study that manipulated sample size, number of replication samples, and reliability. PBF had a higher overall accuracy when benchmarked against other evidence synthesis methods, including random-effects meta-analysis (RMA). This was primarily due to PBF’s greater sensitivity in detecting a true effect. However, PBF had relatively lower specificity. The PBF showed increasing sensitivity and specificity with increasing sample size. With an increasing number of samples, lower sensitivity was traded for greater specificity. Although PBF's overall performance was less susceptible to reliability than the other algorithms, this masked a trade-off between reliability and specificity. PBF thus appears to be a promising method for meta-analysis of heterogeneous conceptual replication studies. Nonetheless, users should be aware of its lower specificity, and the fact that it takes a Bayesian approach to inference and addresses a qualitatively different research question than other evidence synthesis methods.
+  The product Bayes factor (PBF) can synthesize evidence for an informative hypothesis across heterogeneous replication studies. It is particularly useful when the number of studies is relatively low and conventional assumptions about between-studies heterogeneity are likely violated. The present paper introduces a user-friendly implementation of the PBF in the `bain` R-package.
+  The method was validated in a simulation study that manipulated sample size, number of replication samples, and reliability. Several tutorial examples demonstrate the use of the method in distinct use cases. Results of the simulation study show that PBF had a higher overall accuracy when benchmarked against other evidence synthesis methods, including random-effects meta-analysis (RMA). This was primarily due to PBF’s greater sensitivity in detecting a true effect. However, PBF had relatively lower specificity. The PBF showed increasing sensitivity and specificity with increasing sample size. With an increasing number of samples, lower sensitivity was traded for greater specificity. Although PBF's overall performance was less susceptible to reliability than the other algorithms, this masked a trade-off between reliability and specificity. PBF thus appears to be a promising method for meta-analysis of heterogeneous conceptual replication studies. Nonetheless, users should be aware of its lower specificity, and the fact that the Bayesian approach to inference addresses a qualitatively different research question than other evidence synthesis methods.
   
 keywords          : "bayes factor, evidence synthesis, bayesian, meta-analysis"
-wordcount         : "5356"
+wordcount         : "5039"
 
 bibliography      : ["product_bayes.bib", "references.bib"]
 
@@ -70,7 +71,7 @@ library(bain)
 r_refs("r-references.bib")
 source("UI function/pbf.R")
 out <- readRDS("out.RData")
-resultaction = "markup"
+resultaction = "hide" # "markup"
 ```
 
 ```{r analysis-preferences}
@@ -105,12 +106,12 @@ one may assume that no heterogeneity in the outcome exists and a fixed-effect me
 Second, when heterogeneity between studies can be assumed to be random,
 random-effects meta-analysis can be used to estimate the mean of a distribution of population effects. 
 Third, when there are a few systematic differences between studies, these can be accounted for using meta-regression.
-Finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators [@vanlissaSelectRelevantModerators2021].
+Finally, when there are many potential variables that cause systematic differences and it is not known beforehand which are relevant, exploratory techniques like random forest meta-analysis and penalized meta-regression can be used to identify relevant moderators [@vanlissaSelectingRelevantModerators2023].
 However, accounting for moderators requires a relatively high number of observations per moderator,
 which may not be available.
-Each of these approaches thus makes different assumptions about the nature of heterogeneity [see "Models for meta-analysis" in @vanlissaSmallSampleMetaanalyses2020].
 
-A crucial shortcoming of existing research synthesis methods is that the aforementioned assumptions
+Each of the aforementioned approaches makes different assumptions about the nature of heterogeneity [see "Models for meta-analysis" in @vanlissaSmallSampleMetaanalyses2020].
+A crucial shortcoming of existing research synthesis methods is that these assumptions
 may not be tenable when meta-analyzing studies that investigate the same informative hypothesis,
 but are otherwise very heterogeneous.
 The situation may arise where each study is uniquely identified by a combination of linearly dependent moderators.
@@ -152,11 +153,11 @@ BES, on the other hand, aggregates evidence for an informative hypothesis across
 It thus answers the question: Do all these studies support the hypothesis of interest?
 Both methods are appropriate for different research questions, and provide complementary information.
 
-This paper introduces the first implementation of BES in user-friendly free open source software (FOSS).
+This paper introduces the first implementation of BES in user-friendly free open source software.
 A function `pbf()` was contributed to the `bain` R-package for Bayesian informative hypothesis evaluation, version `0.2.9`.
 <!-- `r as.character(packageVersion("bain"))`. -->
-This paper presents a simulation study to validate the method and benchmark it against alternative evidence synthesis methods,
-and illustrates several use cases through reproducible examples.
+This paper presents a simulation study to validate the method and benchmark it against alternative evidence synthesis methods.
+It additionally illustrates several use cases through reproducible examples.
 
 # Simulation study
 
@@ -209,7 +210,7 @@ As a decision criterion to conclude that $H_i$ was supported over its complement
 we used $PBF > 3$ - a conventional threshold for inference using Bayes factors [@jeffreys1998theory].
 
 As a benchmark for comparison, we included several other algorithms that might feasibly be used by researchers who intend to examine whether a hypothesis is true across several independent samples.
-The first was *vote counting*: counting the number of significant effects.
+The first benchmark was *vote counting*: counting the number of significant effects.
 Although this method is still in use for aggregating conceptual replications,
 it is considered bad practice.
 Three disadvantages are that vote counting disregards sample size,
@@ -220,19 +221,19 @@ so $H_0: \rho = .1$ and $H_a: \rho > .1$, which corresponds to $H_i$.
 The decision criterion was that the hypothesis was supported in the majority of samples.
 Thus, for example, if $H_0$ was rejected in three out of five samples, our vote counting algorithm would find overall support for $H_a$ (and, by extension, $H_i$).
 
-The third algorithm was *random-effects meta-analysis* (RMA),
+The second benchmarking algorithm was *random-effects meta-analysis* (RMA),
 which is the current gold standard for evidence synthesis [@viechtbauerConductingMetaanalysesMetafor2010].
-For this algorithm, the null-hypothesis was rejected if the lower bound of a 90% confidence interval for the overall effect size excluded $H_i$.
-Note that this corresponds to a test at $\alpha = .05$,
+For this algorithm, the null-hypothesis was rejected if a 90% confidence interval excluded the hypothesized value under $H_i$.
+Note that a 90% confidence interval corresponds to a test at $\alpha = .05$,
 because all effects in the simulation are directional.
 
-The fourth algorithm was *individual participant data* (IPD) meta-analysis [@rileyMetaanalysisIndividualParticipant2010].
+The third benchmarking algorithm was *individual participant data* (IPD) meta-analysis [@rileyMetaanalysisIndividualParticipant2010].
 Like classic meta-analysis (RMA), IPD is a multilevel model, clustered by sample.
 IPD uses the raw data, which makes it possible to estimate variance at the first level.
 By contrast, RMA treats the first-level variance as known.
 Note that the PBF can be estimated using either sufficient statistics (as in meta-analysis) or using raw data (as in IPD).
 With this in mind, it is informative to benchmark it against both of these methods.
-IPD was also evaluated using the lower bound of a 90% confidence interval for the overall effect size.
+Just as for RMA, a 90% confidence interval was used for inference.
 <!-- Rebecca: -->
 <!-- zou je dit vooraf moeten zeggen? -->
 <!-- Dan zeggen dat ILP dit ook kan en dan zeggen dus dat ook als vergelijking meenemen? -->
@@ -293,7 +294,7 @@ We used ANOVAs to examine the effect of simulation conditions on overall accurac
 The differences between algorithms were analyzed in analyses that included two-way interactions between design factors and algorithm.
 As the sample size was very large,
 significance tests were uninformative.
-We thus focused on interpreting the effect size of the effects of design factors.
+We thus focused on interpreting the effect sizes of the design factors.
 The performance of PBF was most impacted by sample size $n$, followed by the number of groups $k$, and reliability.
 The differences in the effects of sample size and number of groups were relatively small between PBF and the two best practice algorithms, RMA and IPD -
 but substantial between PBF and the suboptimal VC algorithm.
@@ -352,12 +353,13 @@ ggsave("groups.pdf", p, device = "pdf", width = 140, height = 100, units = "mm")
 knitr::include_graphics("groups.pdf")
 ```
 
-Figure \@ref(fig:figk) indicates that, for PBF at higher levels of $k$,
-lower sensitivity was traded for greater specificity.
-The other algorithms did not show this pattern, as their specificity was at a ceiling.
-This difference in pattern of effects explains why number of samples had a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
+Figure \@ref(fig:figk) indicates that PBF showed increasing specificity at higher levels of $k$,
+while sensitivity was relatively unaffected.
+RMA and IPD showed a similar pattern,
+although their specificity was at a ceiling.
 Only VC showed decreasing sensitivity with an increasing number of groups;
 this is because the probability of obtaining false negatives increases with the number of groups [as also noted by @hedgesVotecountingMethodsResearch1980].
+This difference in pattern of effects explains why number of samples had a moderate effect on the difference between algorithms (see Table \@ref(tab:tabeffect)).
 
 ### Effect of reliability
 
@@ -735,7 +737,7 @@ results <- list(results_nl, results_dk, results_us)
 pbf(results, hypothesis = "beta > .1", standardize = TRUE)
 ```
 
-<!-- In the first use-case of `pbf()`, an `lm()` is ran for each sample. All `lm` objects are stored in a list which is passed to `pbf()`. -->
+<!-- In the first use case of `pbf()`, an `lm()` is ran for each sample. All `lm` objects are stored in a list which is passed to `pbf()`. -->
 <!-- `pbf()` supports lists of all objects that `bain()` also supports. All supported types are specified in bain vignette *REF*. One exception is the use of named vectors, which will be covered later. -->
 <!-- ```{r} -->
 <!-- lm_sample1 <- lm(postnumb~site-1, sample1) -->
@@ -753,7 +755,7 @@ pbf(results, hypothesis = "beta > .1", standardize = TRUE)
 <!-- To evaluate $H_i$, it is possible to synthesize the support for $H_i$ over all studies using the pbf calculated with `pbf()`.  -->
 <!-- In this example, data to evaluate $H_i$ is available for three countries. -->
 
-<!-- In the first use-case of `pbf()`, an `lm()` is ran for each country.  -->
+<!-- In the first use case of `pbf()`, an `lm()` is ran for each country.  -->
 <!-- All `lm` objects are stored in a list which is passed to `pbf()`. -->
 <!-- `pbf()` supports lists of all objects that `bain()` also supports.  -->
 <!-- All supported types are specified in the `bain` vignette.  -->
@@ -821,7 +823,7 @@ tryCatch({
 
 ### Using sufficient statistics
 
-A third use-case occurs when the raw data from different samples are not available.
+A third use case occurs when the raw data from different samples are not available.
 This may happen, for example, when aggregating findings from the published literature (similar to meta-analysis).
 In this case, one can use the default interface of `bain`, as explained in [@hoijtink2019tutorial].
 This function requires four arguments: A named vector of parameter estimates, their asymptotic covariance matrix, the original sample size, and the number of within-group and between-group parameters.
@@ -919,6 +921,7 @@ pbf(list(US_bain, DK_bain, NL_bain))
 
 The results suggest substantial evidence for the hypothesis that there is a positive association between family morality and political conservatism.
 Although each study used a different method to assess this hypothesis,
+their evidence can be synthesized using `pbf()`.
 
 ```{r, eval = FALSE, echo = FALSE}
 get_estimates <- function(sample){
@@ -969,7 +972,7 @@ bain_allsamples_ests = list(bain_sample1_ests, bain_sample2_ests, bain_sample3_e
 pbf(bain_allsamples_ests)
 ```
 
-<!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use-case, or is something off in the script? -->
+<!-- It is interesting that these estimates are not identical to the other examples... Is that because we do not have ALL information available in this use case, or is something off in the script? -->
 <!-- CJ: We should ask Herbert about this, but this example won't make it into this paper. If you want, you can send Herbert a reproducible example of the 'problem'!-->
 
 # Conclusion
@@ -985,6 +988,7 @@ This was primarily due to its greater sensitivity.
 However, PBF had lower specificity than all other algorithms, suggesting a trade-off between sensitivity and specificity.
 The other algorithms showed ceiling effects in specificity, limiting their sensitivity.
 The performance of the PBF was most strongly affected by sample size,
+followed by the number of samples and reliability.
 We introduced a user-friendly implementation of the PBF in the `bain` R-package,
 and demonstrated its use with various analysis techniques in R,
 as well as with sufficient statistics that are already routinely coded for meta-analysis (i.e., effect sizes and their sampling variance).
@@ -1002,6 +1006,20 @@ our results suggest that PBF is a useful evidence synthesis method,
 which is now broadly accessible due to its inclusion in the `bain` R-package.
 
 \newpage
+# Highlights
+
+* Many research synthesis methods make strong assumptions about between-studies heterogeneity that are violated when studies are conceptually replicated.
+* The product Bayes factor (PBF) aggregates evidence for an informative hypothesis across conceptual replication studies without imposing assumptions about heterogeneity.
+* This paper introduces a user-friendly way to compute the PBF for a variety of widely used models via the `pbf()` function in the `bain` R-package.
+* A simulation study shows favorable performance for PBF relative to random effects meta-analysis, individual participant data meta-analysis, and vote counting.
+* Three tutorial examples illustrate distinct use cases of the method.
+
+
+# Data Availability Statement
+
+All analysis code is available in a version-controlled repository at <https://github.com/cjvanlissa/bayesynth>.
+
+\newpage
 
 # References
 
@@ -1011,6 +1029,7 @@ which is now broadly accessible due to its inclusion in the `bain` R-package.
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
 
 
 
