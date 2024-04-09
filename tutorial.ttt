@@ -1,0 +1,48 @@
+\begin{table*}[hbt]
+\ifnextchar[{\eatarg}{}
+[tbp]
+
+\begin{center}
+\begin{threeparttable}
+
+\caption{\label{tab:tabkuiper}Data from Kuiper et al., 2013.}
+
+\begin{tabular}{lllllll}
+\toprule
+Study & \multicolumn{1}{c}{beta} & \multicolumn{1}{c}{vi} & \multicolumn{1}{c}{n} & \multicolumn{1}{c}{Type} & \multicolumn{1}{c}{Sample} & \multicolumn{1}{c}{Analysis}\\
+\midrule
+Batenburg et al. (2003) & 0.09 & 0.00 & 971 & Survey & Managers & Linear regression\\
+Buskens \& Raub (2002) & 0.14 & 0.00 & 348 & Experiment & Managers & Linear regression\\
+Buskens \& Weesie (2000) & 1.09 & 0.01 & 1249 & Experiment & Students & Probit regression\\
+Buskens et al. (2010) & 1.78 & 0.03 & 2160 & Experiment & Students & Multilevel model\\
+\bottomrule
+\end{tabular}
+
+\end{threeparttable}
+\end{center}
+
+\end{table*}
+\begin{table*}[hbt]
+\ifnextchar[{\eatarg}{}
+[tbp]
+
+\begin{center}
+\begin{threeparttable}
+
+\caption{\label{tab:tabmulticol}Example of incomparabe studies}
+
+\begin{tabular}{llllll}
+\toprule
+Study & \multicolumn{1}{c}{Sample} & \multicolumn{1}{c}{Design} & \multicolumn{1}{c}{Outcome} & \multicolumn{1}{c}{yi} & \multicolumn{1}{c}{vi}\\
+\midrule
+1 & Europe & Experiment & Reaction time & 0.03 & 0.00\\
+2 & Europe & Survey & Self-report & 0.04 & 0.00\\
+3 & USA & Experiment & Self-report & 0.04 & 0.00\\
+4 & China & Survey & Reaction time & 0.02 & 0.00\\
+\bottomrule
+\end{tabular}
+
+\end{threeparttable}
+\end{center}
+
+\end{table*}

@@ -1,3 +1,6 @@
-worcs_version: 0.1.8
-creator: Studio
+worcs_version: 0.1.14
+creator: vanlissa
 entry_point: run_me.R
+recipe:
+  recipe: targets::tar_make()
+  terminal: no

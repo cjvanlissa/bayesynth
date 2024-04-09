@@ -1,0 +1,36 @@
+\begin{table*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+
+\caption{\label{tab:tabconf}Marginal confusion matrix metrics.}
+\centering
+\begin{tabular}[t]{l|r|r|r|r}
+\hline
+Metric & PBF & IPD & RMA & VC\\
+\hline
+sensitivity & 0.76 & 0.35 & 0.32 & 0.05\\
+\hline
+specificity & 0.76 & 0.99 & 0.99 & 1.00\\
+\hline
+accuracy & 0.76 & 0.67 & 0.66 & 0.52\\
+\hline
+\end{tabular}
+\end{table*}
+\begin{table*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+
+\caption{\label{tab:tabeffect}Partial eta squared of the effect of each design factor on accuracy for each algorithm and for the difference between PBF and all other algorithms (e.g., vs RMA).}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r}
+\hline
+condition & IPD & RMA & VC & PBF & vs IPD & vs RMA & vs VC\\
+\hline
+k & 0.35 & 0.40 & 0.13 & 0.32 & 0.01 & 0.02 & 0.23\\
+\hline
+n & 0.60 & 0.58 & 0.29 & 0.62 & 0.01 & 0.00 & 0.19\\
+\hline
+reliability & 0.62 & 0.61 & 0.23 & 0.04 & 0.27 & 0.25 & 0.01\\
+\hline
+\end{tabular}
+\end{table*}

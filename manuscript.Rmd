@@ -1014,10 +1014,13 @@ which is now broadly accessible due to its inclusion in the `bain` R-package.
 * A simulation study shows favorable performance for PBF relative to random effects meta-analysis, individual participant data meta-analysis, and vote counting.
 * Three tutorial examples illustrate distinct use cases of the method.
 
-
 # Data Availability Statement
 
 All analysis code is available in a version-controlled repository at <https://github.com/cjvanlissa/bayesynth>.
+
+# Conflict of Interest Statement
+
+The authors declare no conflict of interest.
 
 \newpage
 
