@@ -3,14 +3,14 @@ bf_dk|stem|d085e3ea9faf9c64|9189a1a8803b7537|8111307f1c006f1a|-563648076||t19814
 bf_nl|stem|c313e6c1a66fec9e|0f622f0196542b27|bd8b11782a8b5c39|1336656575||t19814.3623815923s|66dfb81f17c6a5b9|65558|rds|local|vector|||0.19||
 bf_nl2|stem|0f0dc6cb1deee05e|cd2377b0c04fc1de|a2ec951b1f59ce62|411113995||t19814.3891481862s|23228bf14e3cdd35|83148|rds|local|vector|||0.2||
 bf_us|stem|b1f54460a23e3b24|70248707888cd5ed|6efb3d47fec9517b|-1605583490||t19814.3891502813s|a0e131d793fcc596|88431|rds|local|vector|||0.18||
-manuscript|stem|5c674f81ae3613c1|e58e5cf5075d9ea6|ef46db3751d8e999|-1793997187|tutorial.pdf*tutorial.Rmd|t19814.4271629093s|7b9d5c61bd480ec4|315120|file|local|vector|||9.25||
+manuscript|stem|5c674f81ae3613c1|14a5b0587dc9456b|cbf8d05736f63b55|-1793997187|tutorial.pdf*tutorial.Rmd|t19814.4271629093s||315120|file|local|vector|||10.24||LaTeX failed to compile tutorial.tex. See httpsyihui.orgtinytexrdebugging for debugging tips. See tutorial.log for more info.
 res_pbf|stem|e6df4abe164d038f|73ff2a0dde086785|ef46db3751d8e999|1981093350||t19814.3616705892s|73a5f5604ca1ab33|288|rds|local|vector|||47.25||
-res_pbf_t1|stem|e6df4abe164d038f|73ff2a0dde086785|ef46db3751d8e999|2088645196||t19814.4187726624s|73a5f5604ca1ab33|288|rds|local|vector|||37.77||
-res_pbf_t3|stem|676769f14a145c7a|7cffc900b2666257|ef46db3751d8e999|-1460968421||t19814.4187796426s|253a8b79276e1ed4|185|rds|local|vector|||0.59||
-res_pbf_t5|stem|acf8f7d97965b104|07860cda3852a2c3|ef46db3751d8e999|-888817939||t19814.3891439269s|b2a37e7acd6b186f|188|rds|local|vector|||4.88||
-res_pbf4|stem|d493d7d88a7a0bad|6612848d486462fe|ef46db3751d8e999|-368358592||t19814.4177556969s|253a8b79276e1ed4|185|rds|local|vector|||5.8||
-res_rma|stem|bccfd1196b2d02d9|836d041148aa5959|ef46db3751d8e999|-1151269023||t19814.3623791162s|84cd3a0e4fe493d4|1374|rds|local|vector|||6.55||
-res_t2|stem|9abf01d40b7c21e8|84764cb378e6f2fb|ef46db3751d8e999|776653293||t19814.4183353368s|dece572c2aaa0236|65567|rds|local|vector|||5.45||
+res_pbf_t1|stem|c50cad600f57e7af|3ad353f28b712131|2c530c1562a7fbd1|2088645196||t19977.3734570632s|c9617cc529bcbe61|288|rds|local|vector|||48.78|package OpenMx was built under R version 4.3.3. package kableExtra was built under R version 4.3.3. package bain was built under R version 4.3.3. package lavaan was built under R version 4.3.3. package metafor was built under R version 4.3.3. package Matrix was built under R version 4.3.3|
+res_pbf_t3|stem|b5faadf1e706b8ed|4261379b943838bf|2c530c1562a7fbd1|-1460968421||t19977.3734676072s|c46a94e42a62e426|185|rds|local|vector|||0.91||
+res_pbf_t5|stem|64b51f09e1370d9d|052827e347263326|2c530c1562a7fbd1|-888817939||t19977.3734680933s|1fa23b41a00fb676|188|rds|local|vector|||0.03||
+res_pbf4|stem|ca80a37fa56a489c|629ac516c2d1e300|2c530c1562a7fbd1|-368358592||t19977.3676366427s|c46a94e42a62e426|185|rds|local|vector|||3.94|package OpenMx was built under R version 4.3.3. package kableExtra was built under R version 4.3.3. package bain was built under R version 4.3.3. package lavaan was built under R version 4.3.3. package metafor was built under R version 4.3.3. package Matrix was built under R version 4.3.3|
+res_rma|stem|711f8535635268cf|927b1b70e9c4d592|2c530c1562a7fbd1|-1151269023||t19977.3734686373s|3be38a2aa8f47573|1370|rds|local|vector|||0.03||
+res_t2|stem|68196ec90c357bbb|89d0e781f68dcf94|2c530c1562a7fbd1|776653293||t19977.3734715076s|fcfc56ad3e56b48f|63176|rds|local|vector|||0.24||
 results_dk|stem|708c6880c2e5e369|4d0fcd5fff2323d2|ef46db3751d8e999|-687924819||t19814.3884382279s|435766dcea3baffc|77619|rds|local|vector|||5.52||
 results_nl|stem|884cbb2e21696fb5|ae756f3c3d47a2ef|ef46db3751d8e999|-1763346524||t19814.3611233603s|c278f5e86d64f96e|62426|rds|local|vector|||6.67||
 results_nl2|stem|d493d7d88a7a0bad|5cbbc43c06b207ea|1aa3faec6e82bdf7|-1299552342||t19814.4040223107s|253a8b79276e1ed4|185|rds|local|vector|||0.63||

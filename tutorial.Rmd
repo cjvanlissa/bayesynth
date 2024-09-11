@@ -74,7 +74,6 @@ r_refs("r-references.bib")
 set.seed(42)
 knitr::opts_chunk$set(cache.extra = knitr::rand_seed, warning = FALSE)
 library(targets)
-tar_load_everything()
 ```
 
 # Introduction
@@ -323,6 +322,7 @@ rma(yi = kuiper2013$beta, vi = kuiper2013$vi)
 ```
 
 ```{r echo = FALSE, eval = TRUE}
+tar_load("res_rma")
 out <- capture.output(print(res_rma, digits = 2))
 out <- out[c(2:4, 8:15)]
 out <- out[!out == ""]
@@ -368,6 +368,7 @@ print_pbf <- function(x){
   }
   print(out)
 }
+tar_load("res_pbf_t1")
 print_pbf(res_pbf_t1)
 ```
 
@@ -463,6 +464,7 @@ print_bain <- function(x, stats = c("Fit", "Com", "BF.u", "BF.c","PMPa", "PMPb")
     cat("\nHypotheses:\n ", paste(rownames(dat)[-nrow(dat)], ": ", x$hypotheses, sep = "", collapse = "\n  "))}
 
 }
+tar_load("res_t2")
 print_bain(res_t2, digits = 2)
 ```
 
@@ -506,6 +508,7 @@ set.seed(1)
 pbf(results, hypothesis = "beta > .1", standardize = TRUE)
 ```
 ```{r, eval = TRUE, echo = FALSE}
+tar_load("res_pbf_t3")
 print_pbf(res_pbf_t3)
 ```
 
@@ -548,6 +551,7 @@ pbf(bfs)
 ```
 
 ```{r, echo = FALSE, eval = TRUE}
+tar_load("res_pbf4")
 print_pbf(res_pbf4)
 ```
 
@@ -653,6 +657,7 @@ pbf(list(US_bain, DK_bain, NL_bain))
 ```
 
 ```{r echo = FALSE, eval = TRUE}
+tar_load("res_pbf_t5")
 print_pbf(res_pbf_t5)
 ```
 
@@ -722,6 +727,9 @@ The authors declare no conflict of interest.
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
+
 
 
 

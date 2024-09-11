@@ -202,5 +202,5 @@ con ~ beta * fam"
                pbf(list(US_bain, DK_bain, NL_bain))
              })
 
-, tarchetypes::tar_render(manuscript, "tutorial.Rmd", cue = tar_cue(mode = "always"))
+# , tarchetypes::tar_render(manuscript, "tutorial.Rmd", cue = tar_cue(mode = "always"))
 )
