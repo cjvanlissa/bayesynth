@@ -201,6 +201,6 @@ con ~ beta * fam"
                # Aggregate evidence using pbf()
                pbf(list(US_bain, DK_bain, NL_bain))
              })
-
+# 
 # , tarchetypes::tar_render(manuscript, "tutorial.Rmd", cue = tar_cue(mode = "always"))
 )

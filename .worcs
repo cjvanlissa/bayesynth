@@ -4,3 +4,6 @@ entry_point: run_me.R
 recipe:
   recipe: targets::tar_make()
   terminal: no
+endpoints: tutorial.pdf
+checksums:
+  tutorial.pdf: 14bc2b21165d4e1fc2b959bbe4983c98
