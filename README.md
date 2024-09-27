@@ -40,7 +40,7 @@ read the preprint at https://osf.io/zcvbs/
 
 ## WORCS: Advice for readers
 
-Please refer to the vignette on [reproducing a WORCS project]() for step by step advice.
+Please refer to the vignette on [reproducing a WORCS project](https://cjvanlissa.github.io/worcs/articles/reproduce.html) for step by step advice.
 <!-- If your project deviates from the steps outlined in the vignette on     -->
 <!-- reproducing a WORCS project, please provide your own advice for         -->
 <!-- readers here.                                                           -->
